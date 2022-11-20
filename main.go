@@ -29,6 +29,7 @@ func init() {
 	flag.StringVar(&url, "url", "", "订阅地址")
 	flag.StringVar(&path, "i", "", "本地 clash 文件")
 	flag.StringVar(&outPath, "o", "config.json", "输出文件")
+	flag.Parse()
 }
 
 func main() {
