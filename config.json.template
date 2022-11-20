@@ -5,7 +5,7 @@
             {
                 "tag": "cloudflare",
                 "address": "1.1.1.1",
-                "detour": "trojan-out"
+                "detour": "auto"
             },
             {
                 "tag": "local",

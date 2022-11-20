@@ -51,9 +51,12 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 	s.ServerPort = p.Port
 	s.Password = p.Password
 
-	s.TLS.Enabled = p.Tls
-	s.TLS.ServerName = p.Sni
-	s.TLS.Insecure = p.SkipCertVerify
+	if p.Tls {
+		s.TLS = &singbox.SingTLS{}
+		s.TLS.Enabled = p.Tls
+		s.TLS.ServerName = p.Sni
+		s.TLS.Insecure = p.SkipCertVerify
+	}
 
 	return s, s.Type, nil
 }
@@ -80,6 +83,7 @@ func vmess(p *clash.Proxies, s *singbox.SingBoxOut) error {
 }
 
 func trojan(p *clash.Proxies, s *singbox.SingBoxOut) error {
+	s.TLS = &singbox.SingTLS{}
 	s.TLS.Enabled = true
 	if p.WsOpts.Path != "" {
 		err := vmessWsOpts(p, s)
@@ -98,6 +102,9 @@ func trojan(p *clash.Proxies, s *singbox.SingBoxOut) error {
 }
 
 func vmessWsOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
+	if s.Transport == nil {
+		s.Transport = &singbox.SingTransport{}
+	}
 	s.Transport.Type = "ws"
 	s.Transport.Headers = p.WsOpts.Headers
 	s.Transport.Path = p.WsOpts.Path
@@ -107,6 +114,9 @@ func vmessWsOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
 }
 
 func vmessGrpcOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
+	if s.Transport == nil {
+		s.Transport = &singbox.SingTransport{}
+	}
 	s.Transport.Type = "grpc"
 	s.Transport.ServiceName = p.GrpcOpts.GrpcServiceName
 	return nil
