@@ -51,17 +51,20 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 	s.ServerPort = p.Port
 	s.Password = p.Password
 
-	if p.Tls {
-		s.TLS = &singbox.SingTLS{}
-		s.TLS.Enabled = p.Tls
-		s.TLS.ServerName = p.Sni
-		s.TLS.Insecure = p.SkipCertVerify
-	}
-
 	return s, s.Type, nil
 }
 
 func vmess(p *clash.Proxies, s *singbox.SingBoxOut) error {
+	if p.Tls {
+		s.TLS = &singbox.SingTLS{}
+		s.TLS.Enabled = p.Tls
+		if p.Servername != "" {
+			s.TLS.ServerName = p.Servername
+		} else {
+			s.TLS.ServerName = p.Server
+		}
+		s.TLS.Insecure = p.SkipCertVerify
+	}
 	s.AlterID = p.AlterId
 	s.UUID = p.Uuid
 	s.Security = p.Cipher
@@ -86,6 +89,12 @@ func trojan(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	if s.TLS == nil {
 		s.TLS = &singbox.SingTLS{}
 	}
+	if p.Sni != "" {
+		s.TLS.ServerName = p.Sni
+	} else {
+		s.TLS.ServerName = p.Server
+	}
+	s.TLS.Insecure = p.SkipCertVerify
 	s.TLS.Enabled = true
 	if p.WsOpts.Path != "" {
 		err := vmessWsOpts(p, s)
