@@ -88,13 +88,21 @@ func getTags(s []singbox.SingBoxOut) []string {
 	return sl
 }
 
-func filterSpacesAndUnion(sl []string) []string {
-	set := map[string]struct{}{}
+func filterSpaces(sl []string) []string {
 	nl := make([]string, 0, len(sl))
 	for _, v := range sl {
 		if v == "" {
 			continue
 		}
+		nl = append(nl, v)
+	}
+	return nl
+}
+
+func union(sl []string) []string {
+	nl := make([]string, 0, len(sl))
+	set := map[string]struct{}{}
+	for _, v := range sl {
 		set[v] = struct{}{}
 	}
 	for k := range set {
@@ -109,8 +117,8 @@ func patch(b []byte, s []singbox.SingBoxOut) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("patch: %w", err)
 	}
-	servers := filterSpacesAndUnion(getServers(s))
-	tags := filterSpacesAndUnion(getTags(s))
+	servers := union(filterSpaces(getServers(s)))
+	tags := filterSpaces(getTags(s))
 
 	d["dns"].(map[string]interface{})["rules"] = []map[string]interface{}{
 		{
