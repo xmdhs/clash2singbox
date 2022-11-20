@@ -135,5 +135,8 @@ func vmessGrpcOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
 
 func ss(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	s.Method = p.Cipher
+	if !p.Udp {
+		s.Network = "tcp"
+	}
 	return nil
 }

@@ -17,6 +17,7 @@ type SingBoxOut struct {
 	Interval   string         `json:"interval,omitempty"`
 	Tolerance  int            `json:"tolerance,omitempty"`
 	URL        string         `json:"url,omitempty"`
+	Network    string         `json:"network,omitempty"`
 }
 
 type SingTLS struct {
