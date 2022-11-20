@@ -73,12 +73,20 @@
     "route": {
         "rules": [
             {
-                "protocol": "dns",
-                "outbound": "dns-out"
-            },
-            {
                 "geosite": "category-ads-all",
                 "outbound": "block"
+            },
+            {
+                "clash_mode": "direct",
+                "outbound": "direct"
+            },
+            {
+                "clash_mode": "global",
+                "outbound": "select"
+            },
+            {
+                "protocol": "dns",
+                "outbound": "dns-out"
             },
             {
                 "geosite": "geolocation-!cn",
