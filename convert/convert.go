@@ -83,7 +83,9 @@ func vmess(p *clash.Proxies, s *singbox.SingBoxOut) error {
 }
 
 func trojan(p *clash.Proxies, s *singbox.SingBoxOut) error {
-	s.TLS = &singbox.SingTLS{}
+	if s.TLS == nil {
+		s.TLS = &singbox.SingTLS{}
+	}
 	s.TLS.Enabled = true
 	if p.WsOpts.Path != "" {
 		err := vmessWsOpts(p, s)
