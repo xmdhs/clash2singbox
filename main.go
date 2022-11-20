@@ -132,7 +132,7 @@ func patch(b []byte, s []singbox.SingBoxOut) ([]byte, error) {
 		Type:      "selector",
 		Tag:       "select",
 		Outbounds: append([]string{"urltest"}, tags...),
-		Default:   "auto",
+		Default:   "urltest",
 	}}, s...)
 
 	s = append(s, singbox.SingBoxOut{
