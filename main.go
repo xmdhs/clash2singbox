@@ -126,10 +126,13 @@ func patch(b []byte, s []singbox.SingBoxOut) ([]byte, error) {
 			"clash_mode": "global",
 		},
 		{
-			"geosite":    "cn",
-			"server":     "local",
-			"domain":     servers,
 			"clash_mode": "direct",
+			"server":     "local",
+		},
+		{
+			"geosite": "cn",
+			"server":  "local",
+			"domain":  servers,
 		},
 	}
 
