@@ -82,7 +82,7 @@
             },
             {
                 "geosite": "geolocation-!cn",
-                "outbound": "trojan-out"
+                "outbound": "auto"
             },
             {
                 "geosite": "cn",

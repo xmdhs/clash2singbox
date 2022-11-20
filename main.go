@@ -88,17 +88,28 @@ func getTags(s []singbox.SingBoxOut) []string {
 	return sl
 }
 
+func filterSpaces(sl []string) []string {
+	nl := make([]string, 0, len(sl))
+	for _, v := range sl {
+		if v == "" {
+			continue
+		}
+		nl = append(nl, v)
+	}
+	return nl
+}
+
 func patch(b []byte, s []singbox.SingBoxOut) ([]byte, error) {
 	d := map[string]interface{}{}
 	err := json.Unmarshal(b, &d)
 	if err != nil {
 		return nil, fmt.Errorf("patch: %w", err)
 	}
-	servers := getServers(s)
-	tags := getTags(s)
+	servers := filterSpaces(getServers(s))
+	tags := filterSpaces(getTags(s))
 
 	d["dns"].(map[string]interface{})["rules"] = []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"geosite": "cn",
 			"server":  "local",
 			"domain":  servers,
