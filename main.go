@@ -123,6 +123,7 @@ func patch(b []byte, s []singbox.SingBoxOut) ([]byte, error) {
 	s = append([]singbox.SingBoxOut{{
 		Type:      "urltest",
 		Tag:       "auto",
+		URL:       "http://cp.cloudflare.com",
 		Outbounds: tags,
 	}}, s...)
 
