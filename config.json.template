@@ -4,7 +4,7 @@
         "servers": [
             {
                 "tag": "remote",
-                "address": "h3://8.8.8.8/dns-query",
+                "address": "https://1.1.1.1/dns-query",
                 "detour": "select"
             },
             {
