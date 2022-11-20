@@ -3,7 +3,7 @@
     "dns": {
         "servers": [
             {
-                "tag": "cloudflare",
+                "tag": "remote",
                 "address": "1.1.1.1",
                 "detour": "select"
             },

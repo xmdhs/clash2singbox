@@ -122,9 +122,14 @@ func patch(b []byte, s []singbox.SingBoxOut) ([]byte, error) {
 
 	d["dns"].(map[string]interface{})["rules"] = []map[string]interface{}{
 		{
-			"geosite": "cn",
-			"server":  "local",
-			"domain":  servers,
+			"server":     "remote",
+			"clash_mode": "global",
+		},
+		{
+			"geosite":    "cn",
+			"server":     "local",
+			"domain":     servers,
+			"clash_mode": "direct",
 		},
 	}
 
