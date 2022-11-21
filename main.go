@@ -72,43 +72,39 @@ func main() {
 	os.WriteFile(outPath, outb, 0777)
 }
 
-func getServers(s []singbox.SingBoxOut) []string {
-	sl := make([]string, 9, len(s))
-	for _, v := range s {
-		sl = append(sl, v.Server)
+func getForList[K, V any](l []K, check func(K) (V, bool)) []V {
+	sl := make([]V, 0, len(l))
+	for _, v := range l {
+		s, ok := check(v)
+		if !ok {
+			continue
+		}
+		sl = append(sl, s)
 	}
 	return sl
+}
+
+func getServers(s []singbox.SingBoxOut) []string {
+	m := map[string]struct{}{}
+	return getForList(s, func(v singbox.SingBoxOut) (string, bool) {
+		server := v.Server
+		_, has := m[server]
+		if server == "" || has {
+			return "", false
+		}
+		m[server] = struct{}{}
+		return server, true
+	})
 }
 
 func getTags(s []singbox.SingBoxOut) []string {
-	sl := make([]string, 9, len(s))
-	for _, v := range s {
-		sl = append(sl, v.Tag)
-	}
-	return sl
-}
-
-func filterSpaces(sl []string) []string {
-	nl := make([]string, 0, len(sl))
-	for _, v := range sl {
-		if v == "" {
-			continue
+	return getForList(s, func(v singbox.SingBoxOut) (string, bool) {
+		tag := v.Tag
+		if tag == "" {
+			return "", false
 		}
-		nl = append(nl, v)
-	}
-	return nl
-}
-
-func union(sl []string) []string {
-	nl := make([]string, 0, len(sl))
-	set := map[string]struct{}{}
-	for _, v := range sl {
-		set[v] = struct{}{}
-	}
-	for k := range set {
-		nl = append(nl, k)
-	}
-	return nl
+		return tag, true
+	})
 }
 
 func patch(b []byte, s []singbox.SingBoxOut) ([]byte, error) {
@@ -117,8 +113,8 @@ func patch(b []byte, s []singbox.SingBoxOut) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("patch: %w", err)
 	}
-	servers := union(filterSpaces(getServers(s)))
-	tags := filterSpaces(getTags(s))
+	servers := getServers(s)
+	tags := getTags(s)
 
 	d["dns"].(map[string]interface{})["rules"] = []map[string]interface{}{
 		{
