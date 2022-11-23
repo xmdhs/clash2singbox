@@ -77,16 +77,16 @@
                 "outbound": "block"
             },
             {
+                "protocol": "dns",
+                "outbound": "dns-out"
+            },
+            {
                 "clash_mode": "direct",
                 "outbound": "direct"
             },
             {
                 "clash_mode": "global",
                 "outbound": "select"
-            },
-            {
-                "protocol": "dns",
-                "outbound": "dns-out"
             },
             {
                 "geosite": "geolocation-!cn",
