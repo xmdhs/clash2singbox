@@ -89,15 +89,18 @@
                 "outbound": "select"
             },
             {
+                "geoip": [
+                    "cn",
+                    "private"
+                ],
+                "outbound": "direct"
+            },
+            {
                 "geosite": "geolocation-!cn",
                 "outbound": "select"
             },
             {
                 "geosite": "cn",
-                "geoip": [
-                    "cn",
-                    "private"
-                ],
                 "outbound": "direct"
             }
         ],
