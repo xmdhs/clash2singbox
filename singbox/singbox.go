@@ -1,6 +1,7 @@
 package singbox
 
 type SingBoxOut struct {
+	Username   string         `json:"username,omitempty"`
 	Password   string         `json:"password,omitempty"`
 	Server     string         `json:"server,omitempty"`
 	ServerPort int            `json:"server_port,omitempty"`
@@ -18,6 +19,8 @@ type SingBoxOut struct {
 	Tolerance  int            `json:"tolerance,omitempty"`
 	URL        string         `json:"url,omitempty"`
 	Network    string         `json:"network,omitempty"`
+	Plugin     string         `json:"plugin,omitempty"`
+	PluginOpts string         `json:"plugin_opts,omitempty"`
 }
 
 type SingTLS struct {

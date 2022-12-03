@@ -1,30 +1,34 @@
 package clash
 
+import "gopkg.in/yaml.v3"
+
 type Clash struct {
 	Proxies []Proxies `yaml:"proxies"`
 }
 
 type Proxies struct {
-	Name           string   `yaml:"name"`
-	Type           string   `yaml:"type"`
-	Server         string   `yaml:"server"`
-	Port           int      `yaml:"port"`
-	Cipher         string   `yaml:"cipher"`
-	Uuid           string   `yaml:"uuid"`
-	AlterId        int      `yaml:"alterId"`
-	Udp            bool     `yaml:"udp"`
-	Tls            bool     `yaml:"tls"`
-	SkipCertVerify bool     `yaml:"skip-cert-verify"`
-	Servername     string   `yaml:"servername"`
-	Network        string   `yaml:"network"`
-	WsOpts         wsOpts   `yaml:"ws-opts"`
-	H2Opts         h2Opts   `yaml:"h2-opts"`
-	HTTPOpts       hTTPOpts `yaml:"http-opts"`
-	GrpcOpts       grpcOpts `yaml:"grpc-opts"`
-	Username       string   `yaml:"username"`
-	Password       string   `yaml:"password"`
-	Sni            string   `yaml:"sni"`
-	Alpn           []string `yaml:"alpn"`
+	Name           string    `yaml:"name"`
+	Type           string    `yaml:"type"`
+	Server         string    `yaml:"server"`
+	Port           int       `yaml:"port"`
+	Cipher         string    `yaml:"cipher"`
+	Uuid           string    `yaml:"uuid"`
+	AlterId        int       `yaml:"alterId"`
+	Udp            bool      `yaml:"udp"`
+	Tls            bool      `yaml:"tls"`
+	SkipCertVerify bool      `yaml:"skip-cert-verify"`
+	Servername     string    `yaml:"servername"`
+	Network        string    `yaml:"network"`
+	WsOpts         wsOpts    `yaml:"ws-opts"`
+	H2Opts         h2Opts    `yaml:"h2-opts"`
+	HTTPOpts       hTTPOpts  `yaml:"http-opts"`
+	GrpcOpts       grpcOpts  `yaml:"grpc-opts"`
+	Username       string    `yaml:"username"`
+	Password       string    `yaml:"password"`
+	Sni            string    `yaml:"sni"`
+	Alpn           []string  `yaml:"alpn"`
+	Plugin         string    `yaml:"plugin"`
+	PluginOpts     yaml.Node `yaml:"plugin-opts"`
 }
 
 type grpcOpts struct {

@@ -23,6 +23,10 @@ func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 			err = ss(&v, s)
 		case "trojan":
 			err = trojan(&v, s)
+		case "http":
+			err = httpOpts(&v, s)
+		case "socks":
+			err = socks5(&v, s)
 		}
 		if err != nil {
 			return nil, fmt.Errorf("clash2sing: %w", err)
@@ -43,6 +47,10 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 		s.Type = "vmess"
 	case "trojan":
 		s.Type = "trojan"
+	case "socks5":
+		s.Type = "socks"
+	case "http":
+		s.Type = "http"
 	default:
 		return nil, "", fmt.Errorf("comm: %w", ErrNotSupportType)
 	}
@@ -52,91 +60,4 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 	s.Password = p.Password
 
 	return s, s.Type, nil
-}
-
-func vmess(p *clash.Proxies, s *singbox.SingBoxOut) error {
-	if p.Tls {
-		s.TLS = &singbox.SingTLS{}
-		s.TLS.Enabled = p.Tls
-		if p.Servername != "" {
-			s.TLS.ServerName = p.Servername
-		} else {
-			s.TLS.ServerName = p.Server
-		}
-		s.TLS.Insecure = p.SkipCertVerify
-	}
-	s.AlterID = p.AlterId
-	s.UUID = p.Uuid
-	s.Security = p.Cipher
-	if p.WsOpts.Path != "" {
-		err := vmessWsOpts(p, s)
-		if err != nil {
-			return fmt.Errorf("vmess: %w", err)
-		}
-		return nil
-	}
-	if p.GrpcOpts.GrpcServiceName != "" {
-		err := vmessGrpcOpts(p, s)
-		if err != nil {
-			return fmt.Errorf("vmess: %w", err)
-		}
-		return nil
-	}
-	return fmt.Errorf("vmess: %w", ErrNotSupportType)
-}
-
-func trojan(p *clash.Proxies, s *singbox.SingBoxOut) error {
-	if s.TLS == nil {
-		s.TLS = &singbox.SingTLS{}
-	}
-	if p.Sni != "" {
-		s.TLS.ServerName = p.Sni
-	} else {
-		s.TLS.ServerName = p.Server
-	}
-	s.TLS.Insecure = p.SkipCertVerify
-	s.TLS.Enabled = true
-	if p.WsOpts.Path != "" {
-		err := vmessWsOpts(p, s)
-		if err != nil {
-			return fmt.Errorf("trojan: %w", err)
-		}
-	}
-	if p.GrpcOpts.GrpcServiceName != "" {
-		err := vmessGrpcOpts(p, s)
-		if err != nil {
-			return fmt.Errorf("trojan: %w", err)
-		}
-	}
-	s.TLS.Alpn = p.Alpn
-	return nil
-}
-
-func vmessWsOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
-	if s.Transport == nil {
-		s.Transport = &singbox.SingTransport{}
-	}
-	s.Transport.Type = "ws"
-	s.Transport.Headers = p.WsOpts.Headers
-	s.Transport.Path = p.WsOpts.Path
-	s.Transport.EarlyDataHeaderName = p.WsOpts.EarlyDataHeaderName
-	s.Transport.MaxEarlyData = p.WsOpts.MaxEarlyData
-	return nil
-}
-
-func vmessGrpcOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
-	if s.Transport == nil {
-		s.Transport = &singbox.SingTransport{}
-	}
-	s.Transport.Type = "grpc"
-	s.Transport.ServiceName = p.GrpcOpts.GrpcServiceName
-	return nil
-}
-
-func ss(p *clash.Proxies, s *singbox.SingBoxOut) error {
-	s.Method = p.Cipher
-	if !p.Udp {
-		s.Network = "tcp"
-	}
-	return nil
 }
