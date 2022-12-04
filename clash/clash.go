@@ -10,7 +10,7 @@ type Proxies struct {
 	Name           string    `yaml:"name"`
 	Type           string    `yaml:"type"`
 	Server         string    `yaml:"server"`
-	Port           int       `yaml:"port"`
+	Port           string    `yaml:"port"`
 	Cipher         string    `yaml:"cipher"`
 	Uuid           string    `yaml:"uuid"`
 	AlterId        int       `yaml:"alterId"`

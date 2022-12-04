@@ -3,6 +3,7 @@ package convert
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/xmdhs/clash2singbox/clash"
 	"github.com/xmdhs/clash2singbox/singbox"
@@ -56,7 +57,11 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 	}
 	s.Tag = p.Name
 	s.Server = p.Server
-	s.ServerPort = p.Port
+	port, err := strconv.Atoi(p.Port)
+	if err != nil {
+		return nil, "", fmt.Errorf("comm: %w", err)
+	}
+	s.ServerPort = port
 	s.Password = p.Password
 
 	return s, s.Type, nil
