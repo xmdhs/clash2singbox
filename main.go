@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/xmdhs/clash2singbox/clash"
 	"github.com/xmdhs/clash2singbox/convert"
@@ -20,6 +21,8 @@ var (
 	url     string
 	path    string
 	outPath string
+	include string
+	exclude string
 )
 
 //go:embed config.json.template
@@ -29,6 +32,8 @@ func init() {
 	flag.StringVar(&url, "url", "", "订阅地址")
 	flag.StringVar(&path, "i", "", "本地 clash 文件")
 	flag.StringVar(&outPath, "o", "config.json", "输出文件")
+	flag.StringVar(&include, "include", "", "urltest 选择的节点")
+	flag.StringVar(&exclude, "exclude", "", "urltest 排除的节点")
 	flag.Parse()
 }
 
@@ -70,6 +75,20 @@ func main() {
 	}
 
 	os.WriteFile(outPath, outb, 0777)
+}
+
+func filter(isinclude bool, reg string, sl []string) []string {
+	r := regexp.MustCompile(reg)
+	return getForList(sl, func(v string) (string, bool) {
+		has := r.MatchString(v)
+		if has && isinclude {
+			return v, true
+		}
+		if !isinclude && !has {
+			return v, true
+		}
+		return "", false
+	})
 }
 
 func getForList[K, V any](l []K, check func(K) (V, bool)) []V {
@@ -116,6 +135,14 @@ func patch(b []byte, s []singbox.SingBoxOut) ([]byte, error) {
 	servers := getServers(s)
 	tags := getTags(s)
 
+	ftags := tags
+	if include != "" {
+		ftags = filter(true, include, ftags)
+	}
+	if exclude != "" {
+		ftags = filter(false, exclude, ftags)
+	}
+
 	d["dns"].(map[string]interface{})["rules"] = []map[string]interface{}{
 		{
 			"server":     "remote",
@@ -154,7 +181,7 @@ func patch(b []byte, s []singbox.SingBoxOut) ([]byte, error) {
 	s = append(s, singbox.SingBoxOut{
 		Type:      "urltest",
 		Tag:       "urltest",
-		Outbounds: tags,
+		Outbounds: ftags,
 	})
 
 	d["outbounds"] = s
