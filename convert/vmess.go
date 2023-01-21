@@ -27,7 +27,7 @@ func vmess(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	s.AlterID = p.AlterId
 	s.UUID = p.Uuid
 	s.Security = p.Cipher
-	if p.WsOpts.Path != "" {
+	if p.WsOpts.Path != "" || p.Network == "ws" {
 		err := vmessWsOpts(p, s)
 		if err != nil {
 			return fmt.Errorf("vmess: %w", err)
@@ -41,7 +41,7 @@ func vmess(p *clash.Proxies, s *singbox.SingBoxOut) error {
 		}
 		return nil
 	}
-	if p.H2Opts.Path != "" {
+	if p.H2Opts.Path != "" || p.Network == "h2" {
 		err := vmessHttpOpts(p, s)
 		if err != nil {
 			return fmt.Errorf("vmess: %w", err)
@@ -93,7 +93,7 @@ func trojan(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	}
 	s.TLS.Insecure = p.SkipCertVerify
 	s.TLS.Enabled = true
-	if p.WsOpts.Path != "" {
+	if p.WsOpts.Path != "" || p.Network == "ws" {
 		err := vmessWsOpts(p, s)
 		if err != nil {
 			return fmt.Errorf("trojan: %w", err)
