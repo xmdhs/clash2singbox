@@ -206,5 +206,6 @@ func toInsecure(c *clash.Clash) {
 	for i := range c.Proxies {
 		p := c.Proxies[i]
 		p.SkipCertVerify = true
+		c.Proxies[i] = p
 	}
 }
