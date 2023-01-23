@@ -18,11 +18,12 @@ import (
 )
 
 var (
-	url     string
-	path    string
-	outPath string
-	include string
-	exclude string
+	url      string
+	path     string
+	outPath  string
+	include  string
+	exclude  string
+	insecure bool
 )
 
 //go:embed config.json.template
@@ -34,6 +35,7 @@ func init() {
 	flag.StringVar(&outPath, "o", "config.json", "输出文件")
 	flag.StringVar(&include, "include", "", "urltest 选择的节点")
 	flag.StringVar(&exclude, "exclude", "", "urltest 排除的节点")
+	flag.BoolVar(&insecure, "insecure", false, "所有节点不验证证书")
 	flag.Parse()
 }
 
@@ -50,12 +52,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	c := clash.Clash{}
 	err = yaml.Unmarshal(b, &c)
 	if err != nil {
 		panic(err)
 	}
+
+	if insecure {
+		toInsecure(&c)
+	}
+
 	s, err := convert.Clash2sing(c)
 	if err != nil {
 		panic(err)
@@ -194,4 +200,11 @@ func patch(b []byte, s []singbox.SingBoxOut) ([]byte, error) {
 		return nil, fmt.Errorf("patch: %w", err)
 	}
 	return bw.Bytes(), nil
+}
+
+func toInsecure(c *clash.Clash) {
+	for i := range c.Proxies {
+		p := c.Proxies[i]
+		p.SkipCertVerify = true
+	}
 }
