@@ -1,10 +1,8 @@
 package httputils
 
 import (
-	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -17,7 +15,6 @@ func HttpGet(url string) ([]byte, error) {
 		return nil, fmt.Errorf("HttpGet: %w", err)
 	}
 	reqs.Header.Set("Accept", "*/*")
-	reqs.Header.Add("accept-encoding", "gzip")
 	reqs.Header.Set("User-Agent", "clash2singbox (Must Clash Format)")
 	rep, err := c.Do(reqs)
 	if rep != nil {
@@ -29,18 +26,7 @@ func HttpGet(url string) ([]byte, error) {
 	if rep.StatusCode != http.StatusOK {
 		return nil, Errpget{Msg: rep.Status, url: url}
 	}
-	var reader io.ReadCloser
-	switch rep.Header.Get("Content-Encoding") {
-	case "gzip":
-		reader, err = gzip.NewReader(rep.Body)
-		if err != nil {
-			return nil, fmt.Errorf("httpget: %w", err)
-		}
-		defer reader.Close()
-	default:
-		reader = rep.Body
-	}
-	b, err := ioutil.ReadAll(reader)
+	b, err := io.ReadAll(rep.Body)
 	if err != nil {
 		return nil, fmt.Errorf("HttpGet: %w", err)
 	}
