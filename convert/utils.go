@@ -65,7 +65,6 @@ func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []i
 	if err != nil {
 		return nil, fmt.Errorf("patch: %w", err)
 	}
-	servers := getServers(s)
 	tags := getTags(s)
 
 	tags = append(tags, extags...)
@@ -76,22 +75,6 @@ func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []i
 	}
 	if exclude != "" {
 		ftags = filter(false, exclude, ftags)
-	}
-
-	d["dns"].(map[string]interface{})["rules"] = []map[string]interface{}{
-		{
-			"server":     "remote",
-			"clash_mode": "global",
-		},
-		{
-			"clash_mode": "direct",
-			"server":     "local",
-		},
-		{
-			"geosite": "cn",
-			"server":  "local",
-			"domain":  servers,
-		},
 	}
 
 	s = append([]singbox.SingBoxOut{{
