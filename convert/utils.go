@@ -59,7 +59,7 @@ func getTags(s []singbox.SingBoxOut) []string {
 	})
 }
 
-func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string) ([]byte, error) {
+func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extags ...string) ([]byte, error) {
 	d := map[string]interface{}{}
 	err := json.Unmarshal(b, &d)
 	if err != nil {
@@ -67,6 +67,8 @@ func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string) ([]byte, e
 	}
 	servers := getServers(s)
 	tags := getTags(s)
+
+	tags = append(tags, extags...)
 
 	ftags := tags
 	if include != "" {
