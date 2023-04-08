@@ -8,7 +8,7 @@ import (
 )
 
 func HttpGet(cxt context.Context, c *http.Client, url string) ([]byte, error) {
-	reqs, err := http.NewRequest("GET", url, nil)
+	reqs, err := http.NewRequestWithContext(cxt, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("HttpGet: %w", err)
 	}
