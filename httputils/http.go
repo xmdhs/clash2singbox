@@ -1,15 +1,13 @@
 package httputils
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 )
 
-var c = http.Client{Timeout: 10 * time.Second}
-
-func HttpGet(url string) ([]byte, error) {
+func HttpGet(cxt context.Context, c *http.Client, url string) ([]byte, error) {
 	reqs, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("HttpGet: %w", err)

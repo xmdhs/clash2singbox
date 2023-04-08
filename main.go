@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"errors"
 	"flag"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/xmdhs/clash2singbox/clash"
 	"github.com/xmdhs/clash2singbox/convert"
@@ -38,7 +41,7 @@ func main() {
 	var b []byte
 	var err error
 	if url != "" {
-		b, err = httputils.HttpGet(url)
+		b, err = httputils.HttpGet(context.TODO(), &http.Client{Timeout: 10 * time.Second}, url)
 	} else if path != "" {
 		b, err = os.ReadFile(path)
 	} else {
