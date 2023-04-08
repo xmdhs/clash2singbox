@@ -59,7 +59,7 @@ func getTags(s []singbox.SingBoxOut) []string {
 	})
 }
 
-func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extags ...string) ([]byte, error) {
+func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []interface{}, extags ...string) ([]byte, error) {
 	d := map[string]interface{}{}
 	err := json.Unmarshal(b, &d)
 	if err != nil {
@@ -119,7 +119,13 @@ func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extags ...
 		Outbounds: ftags,
 	})
 
-	d["outbounds"] = s
+	anyList := make([]any, 0, len(s)+len(extOut))
+	for _, v := range s {
+		anyList = append(anyList, v)
+	}
+	anyList = append(anyList, extOut...)
+
+	d["outbounds"] = anyList
 
 	bw := &bytes.Buffer{}
 	jw := json.NewEncoder(bw)

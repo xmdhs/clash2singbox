@@ -73,7 +73,7 @@ func main() {
 		}
 	}
 
-	outb, err = convert.Patch(outb, s, include, exclude)
+	outb, err = convert.Patch(outb, s, include, exclude, nil)
 	if err != nil {
 		panic(err)
 	}
