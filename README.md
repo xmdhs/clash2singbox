@@ -15,5 +15,5 @@
 - vmess (仅 ws 和 grpc)
 - trojan
 
-## 在线版本
+## 网页版本
 https://github.com/xmdhs/clash2sfa
