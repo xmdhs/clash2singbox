@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/xmdhs/clash2singbox/clash"
-	"github.com/xmdhs/clash2singbox/singbox"
+	"github.com/xmdhs/clash2singbox/model/clash"
+	"github.com/xmdhs/clash2singbox/model/singbox"
 )
 
 func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {

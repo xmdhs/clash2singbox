@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xmdhs/clash2singbox/clash"
-	"github.com/xmdhs/clash2singbox/singbox"
+	"github.com/xmdhs/clash2singbox/model/clash"
+	"github.com/xmdhs/clash2singbox/model/singbox"
 	"gopkg.in/yaml.v3"
 )
 

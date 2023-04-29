@@ -3,8 +3,8 @@ package convert
 import (
 	"fmt"
 
-	"github.com/xmdhs/clash2singbox/clash"
-	"github.com/xmdhs/clash2singbox/singbox"
+	"github.com/xmdhs/clash2singbox/model/clash"
+	"github.com/xmdhs/clash2singbox/model/singbox"
 )
 
 func tls(p *clash.Proxies, s *singbox.SingBoxOut) {
