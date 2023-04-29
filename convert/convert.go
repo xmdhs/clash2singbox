@@ -9,6 +9,17 @@ import (
 	"github.com/xmdhs/clash2singbox/model/singbox"
 )
 
+var convertMap = map[string]func(p *clash.Proxies, s *singbox.SingBoxOut) error{
+	"vmess":        vmess,
+	"vless":        vless,
+	"shadowsocks":  ss,
+	"shadowsocksr": ss,
+	"trojan":       trojan,
+	"http":         httpOpts,
+	"socks":        socks5,
+	"hysteria":     hysteria,
+}
+
 func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 	sl := make([]singbox.SingBoxOut, 0, len(c.Proxies)+1)
 	for _, v := range c.Proxies {
@@ -17,18 +28,7 @@ func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 		if err != nil {
 			return nil, fmt.Errorf("clash2sing: %w", err)
 		}
-		switch t {
-		case "vmess":
-			err = vmess(&v, s)
-		case "shadowsocks":
-			err = ss(&v, s)
-		case "trojan":
-			err = trojan(&v, s)
-		case "http":
-			err = httpOpts(&v, s)
-		case "socks":
-			err = socks5(&v, s)
-		}
+		err = convertMap[t](&v, s)
 		if err != nil {
 			return nil, fmt.Errorf("clash2sing: %w", err)
 		}
@@ -39,20 +39,21 @@ func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 
 var ErrNotSupportType = errors.New("不支持的类型")
 
+var typeMap = map[string]string{
+	"ss":       "shadowsocks",
+	"ssr":      "shadowsocksr",
+	"vmess":    "vmess",
+	"vless":    "vless",
+	"trojan":   "trojan",
+	"socks5":   "socks5",
+	"http":     "http",
+	"hysteria": "hysteria",
+}
+
 func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 	s := &singbox.SingBoxOut{}
-	switch p.Type {
-	case "ss":
-		s.Type = "shadowsocks"
-	case "vmess":
-		s.Type = "vmess"
-	case "trojan":
-		s.Type = "trojan"
-	case "socks5":
-		s.Type = "socks"
-	case "http":
-		s.Type = "http"
-	default:
+	s.Type = typeMap[p.Type]
+	if s.Type == "" {
 		return nil, "", fmt.Errorf("comm: %w", ErrNotSupportType)
 	}
 	s.Tag = p.Name

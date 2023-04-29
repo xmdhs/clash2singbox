@@ -13,7 +13,7 @@ func HttpGet(cxt context.Context, c *http.Client, url string) ([]byte, error) {
 		return nil, fmt.Errorf("HttpGet: %w", err)
 	}
 	reqs.Header.Set("Accept", "*/*")
-	reqs.Header.Set("User-Agent", "clash2singbox (Must Clash Format)")
+	reqs.Header.Set("User-Agent", "clash2singbox (Must Clash Format OR ClashMeta Format)")
 	rep, err := c.Do(reqs)
 	if rep != nil {
 		defer rep.Body.Close()

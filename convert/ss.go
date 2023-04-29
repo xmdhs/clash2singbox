@@ -22,6 +22,9 @@ func ss(p *clash.Proxies, s *singbox.SingBoxOut) error {
 			return fmt.Errorf("ss: %w", err)
 		}
 	}
+	s.Obfs = p.Obfs
+	s.ProtocolParam = p.ProtocolParam
+	s.ObfsParam = p.ObfsParam
 	return nil
 }
 

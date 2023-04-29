@@ -18,6 +18,14 @@ func tls(p *clash.Proxies, s *singbox.SingBoxOut) {
 		} else {
 			s.TLS.ServerName = p.Server
 		}
+		if p.Fingerprint != "" || p.ClientFingerprint != "" {
+			s.TLS.Utls.Enabled = true
+			if p.ClientFingerprint != "" {
+				s.TLS.Utls.Fingerprint = p.ClientFingerprint
+			} else {
+				s.TLS.Utls.Fingerprint = p.Fingerprint
+			}
+		}
 		s.TLS.Insecure = p.SkipCertVerify
 	}
 }
@@ -47,6 +55,27 @@ func vmess(p *clash.Proxies, s *singbox.SingBoxOut) error {
 			return fmt.Errorf("vmess: %w", err)
 		}
 		return nil
+	}
+	return nil
+}
+
+func vless(p *clash.Proxies, s *singbox.SingBoxOut) error {
+	err := vmess(p, s)
+	if err != nil {
+		return fmt.Errorf("vless: %w", err)
+	}
+	s.PacketEncoding = "xudp"
+	if p.PacketEncoding != "" {
+		s.PacketEncoding = p.PacketEncoding
+	}
+	if p.Flow != "" && p.Flow != "xtls-rprx-vision" {
+		return fmt.Errorf("vless: Flow %w", ErrNotSupportType)
+	}
+	s.Flow = p.Flow
+	if p.RealityOpts.ShortId != "" {
+		s.TLS.Reality.Enabled = true
+		s.TLS.Reality.PublicKey = p.RealityOpts.PublicKey
+		s.TLS.Reality.ShortID = p.RealityOpts.ShortId
 	}
 	return nil
 }
