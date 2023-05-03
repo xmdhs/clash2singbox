@@ -68,10 +68,12 @@ func vless(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	if p.PacketEncoding != "" {
 		s.PacketEncoding = p.PacketEncoding
 	}
-	if p.Flow != "" && p.Flow != "xtls-rprx-vision" {
-		return fmt.Errorf("vless: Flow %w", ErrNotSupportType)
+	if p.Network != "ws" && len(p.Flow) >= 16 {
+		if p.Flow != "" && p.Flow != "xtls-rprx-vision" {
+			return fmt.Errorf("vless: Flow %w", ErrNotSupportType)
+		}
+		s.Flow = p.Flow
 	}
-	s.Flow = p.Flow
 	if p.RealityOpts.ShortId != "" {
 		s.TLS.Reality.Enabled = true
 		s.TLS.Reality.PublicKey = p.RealityOpts.PublicKey

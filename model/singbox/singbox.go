@@ -38,13 +38,13 @@ type SingBoxOut struct {
 }
 
 type SingTLS struct {
-	Enabled     bool        `json:"enabled,omitempty"`
-	ServerName  string      `json:"server_name,omitempty"`
-	Alpn        []string    `json:"alpn,omitempty"`
-	Insecure    bool        `json:"insecure,omitempty"`
-	Utls        SingUtls    `json:"utls,omitempty"`
-	Reality     SingReality `json:"reality,omitempty"`
-	Certificate string      `json:"certificate,omitempty"`
+	Enabled     bool         `json:"enabled,omitempty"`
+	ServerName  string       `json:"server_name,omitempty"`
+	Alpn        []string     `json:"alpn,omitempty"`
+	Insecure    bool         `json:"insecure,omitempty"`
+	Utls        *SingUtls    `json:"utls,omitempty"`
+	Reality     *SingReality `json:"reality,omitempty"`
+	Certificate string       `json:"certificate,omitempty"`
 }
 
 type SingUtls struct {
