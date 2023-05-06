@@ -28,7 +28,7 @@ var (
 var configByte []byte
 
 func init() {
-	flag.StringVar(&url, "url", "", "订阅地址")
+	flag.StringVar(&url, "url", "", "订阅地址，多个链接使用 | 分割")
 	flag.StringVar(&path, "i", "", "本地 clash 文件")
 	flag.StringVar(&outPath, "o", "config.json", "输出文件")
 	flag.StringVar(&include, "include", "", "urltest 选择的节点")
@@ -38,22 +38,24 @@ func init() {
 }
 
 func main() {
-	var b []byte
-	var err error
+	c := clash.Clash{}
 	if url != "" {
-		b, err = httputils.HttpGet(context.TODO(), &http.Client{Timeout: 10 * time.Second}, url)
+		var err error
+		c, err = httputils.GetClash(context.TODO(), &http.Client{Timeout: 10 * time.Second}, url)
+		if err != nil {
+			panic(err)
+		}
 	} else if path != "" {
-		b, err = os.ReadFile(path)
+		b, err := os.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
+		err = yaml.Unmarshal(b, c)
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		panic("url 和 i 参数不能都为空")
-	}
-	if err != nil {
-		panic(err)
-	}
-	c := clash.Clash{}
-	err = yaml.Unmarshal(b, &c)
-	if err != nil {
-		panic(err)
 	}
 
 	if insecure {

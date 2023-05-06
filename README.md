@@ -4,6 +4,8 @@
 ## 用法
 `./clash2singbox -i config.yaml` 或者 `./clash2singbox -url <订阅链接>` 。
 
+多个订阅链接使用 | 分割
+
 更多用法见 `./clash2singbox -h`
 
 只会修改目标文件的 outbounds，第一次运行会按模板修改。
