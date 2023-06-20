@@ -50,7 +50,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		err = yaml.Unmarshal(b, c)
+		err = yaml.Unmarshal(b, &c)
 		if err != nil {
 			panic(err)
 		}

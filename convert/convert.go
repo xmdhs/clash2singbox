@@ -9,15 +9,22 @@ import (
 	"github.com/xmdhs/clash2singbox/model/singbox"
 )
 
-var convertMap = map[string]func(p *clash.Proxies, s *singbox.SingBoxOut) error{
-	"vmess":        vmess,
-	"vless":        vless,
+var convertMap = map[string]func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox.SingBoxOut, error){
+	"vmess":        warpOldConver(vmess),
+	"vless":        warpOldConver(vless),
 	"shadowsocks":  ss,
 	"shadowsocksr": ss,
-	"trojan":       trojan,
-	"http":         httpOpts,
-	"socks":        socks5,
-	"hysteria":     hysteria,
+	"trojan":       warpOldConver(trojan),
+	"http":         warpOldConver(httpOpts),
+	"socks":        warpOldConver(socks5),
+	"hysteria":     warpOldConver(hysteria),
+}
+
+func warpOldConver(f func(*clash.Proxies, *singbox.SingBoxOut) error) func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
+	return func(c *clash.Proxies, p *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
+		err := f(c, p)
+		return []singbox.SingBoxOut{*p}, err
+	}
 }
 
 func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
@@ -28,11 +35,11 @@ func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 		if err != nil {
 			return nil, fmt.Errorf("clash2sing: %w", err)
 		}
-		err = convertMap[t](&v, s)
+		nsl, err := convertMap[t](&v, s)
 		if err != nil {
 			return nil, fmt.Errorf("clash2sing: %w", err)
 		}
-		sl = append(sl, *s)
+		sl = append(sl, nsl...)
 	}
 	return sl, nil
 }

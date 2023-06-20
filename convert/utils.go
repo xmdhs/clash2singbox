@@ -52,7 +52,7 @@ func getServers(s []singbox.SingBoxOut) []string {
 func getTags(s []singbox.SingBoxOut) []string {
 	return getForList(s, func(v singbox.SingBoxOut) (string, bool) {
 		tag := v.Tag
-		if tag == "" {
+		if tag == "" || v.Type == "shadowtls" {
 			return "", false
 		}
 		return tag, true

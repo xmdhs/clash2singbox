@@ -51,6 +51,17 @@ type Proxies struct {
 	RecvWindowConn1     int         `yaml:"recv_window_conn"`
 	Up                  string      `yaml:"up"`
 	Ports               string      `yaml:"ports"`
+	Smux                smuxOpts    `yaml:"smux"`
+	UdpOverTcp          bool        `yaml:"udp-over-tcp"`
+}
+
+type smuxOpts struct {
+	Enabled        bool   `yaml:"enabled"`
+	MaxConnections int    `yaml:"max-connections"`
+	MaxStreams     int    `yaml:"max-streams"`
+	MinStreams     int    `yaml:"min-streams"`
+	Padding        bool   `yaml:"padding"`
+	Protocol       string `yaml:"protocol"`
 }
 
 type grpcOpts struct {
