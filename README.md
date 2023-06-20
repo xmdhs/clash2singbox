@@ -13,7 +13,7 @@
 默认开启 clash api，可通过例如 `clash.razord.top` 切换节点和代理模式。
 
 ## 支持协议
-- shadowsocks （仅包含 v2ray-plugin 和 obfs 插件）
+- shadowsocks （仅包含 v2ray-plugin, obfs 和 shadow-tls 插件）
 - shadowsocksR
 - vmess
 - vless (含 reality)
