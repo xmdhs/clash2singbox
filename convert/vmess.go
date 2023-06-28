@@ -19,6 +19,7 @@ func tls(p *clash.Proxies, s *singbox.SingBoxOut) {
 			s.TLS.ServerName = p.Server
 		}
 		if p.Fingerprint != "" || p.ClientFingerprint != "" {
+			s.TLS.Utls = &singbox.SingUtls{}
 			s.TLS.Utls.Enabled = true
 			if p.ClientFingerprint != "" {
 				s.TLS.Utls.Fingerprint = p.ClientFingerprint
@@ -81,6 +82,7 @@ func vless(p *clash.Proxies, s *singbox.SingBoxOut) error {
 		s.Flow = p.Flow
 	}
 	if p.RealityOpts.ShortId != "" {
+		s.TLS.Reality = &singbox.SingReality{}
 		s.TLS.Reality.Enabled = true
 		s.TLS.Reality.PublicKey = p.RealityOpts.PublicKey
 		s.TLS.Reality.ShortID = p.RealityOpts.ShortId
