@@ -69,9 +69,9 @@ type grpcOpts struct {
 }
 
 type hTTPOpts struct {
-	Headers map[string]string `yaml:"headers"`
-	Method  string            `yaml:"method"`
-	Path    []string          `yaml:"path"`
+	Headers map[string][]string `yaml:"headers"`
+	Method  string              `yaml:"method"`
+	Path    []string            `yaml:"path"`
 }
 
 type h2Opts struct {
