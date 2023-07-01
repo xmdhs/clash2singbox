@@ -71,6 +71,7 @@ func vless(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	if err != nil {
 		return fmt.Errorf("vless: %w", err)
 	}
+	s.Security = ""
 	s.PacketEncoding = "xudp"
 	if p.PacketEncoding != "" {
 		s.PacketEncoding = p.PacketEncoding
