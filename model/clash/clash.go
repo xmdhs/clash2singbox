@@ -1,6 +1,8 @@
 package clash
 
-import "gopkg.in/yaml.v3"
+import (
+	"gopkg.in/yaml.v3"
+)
 
 type Clash struct {
 	Proxies []Proxies `yaml:"proxies"`
@@ -53,6 +55,14 @@ type Proxies struct {
 	Ports               string      `yaml:"ports"`
 	Smux                smuxOpts    `yaml:"smux"`
 	UdpOverTcp          bool        `yaml:"udp-over-tcp"`
+	IP                  string      `yaml:"ip"`
+	IPv6                string      `yaml:"ipv6"`
+	PublicKey           string      `yaml:"public-key"`
+	PreSharedKey        string      `yaml:"pre-shared-key"`
+	PrivateKey          string      `yaml:"private-key"`
+	Reserved            []uint8     `yaml:"reserved"`
+	DialerProxy         string
+	Peers               []wgPeer
 }
 
 type smuxOpts struct {
@@ -89,4 +99,15 @@ type wsOpts struct {
 type realityOpts struct {
 	PublicKey string `yaml:"public-key"`
 	ShortId   string `yaml:"short-id"`
+}
+
+type wgPeer struct {
+	Server       string   `yaml:"server"`
+	Port         int      `yaml:"port"`
+	Ip           string   `yaml:"ip"`
+	Ipv6         string   `yaml:"ipv6"`
+	PublicKey    string   `yaml:"public-key"`
+	PreSharedKey string   `yaml:"pre-shared-key"`
+	Reserved     []uint8  `yaml:"reserved"`
+	AllowedIPs   []string `yaml:"allowed-ips"`
 }

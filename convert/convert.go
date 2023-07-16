@@ -18,6 +18,7 @@ var convertMap = map[string]func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox
 	"http":         warpOldConver(httpOpts),
 	"socks":        warpOldConver(socks5),
 	"hysteria":     warpOldConver(hysteria),
+	"wireguard":    wireguard,
 }
 
 func warpOldConver(f func(*clash.Proxies, *singbox.SingBoxOut) error) func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
@@ -47,14 +48,15 @@ func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 var ErrNotSupportType = errors.New("不支持的类型")
 
 var typeMap = map[string]string{
-	"ss":       "shadowsocks",
-	"ssr":      "shadowsocksr",
-	"vmess":    "vmess",
-	"vless":    "vless",
-	"trojan":   "trojan",
-	"socks5":   "socks5",
-	"http":     "http",
-	"hysteria": "hysteria",
+	"ss":        "shadowsocks",
+	"ssr":       "shadowsocksr",
+	"vmess":     "vmess",
+	"vless":     "vless",
+	"trojan":    "trojan",
+	"socks5":    "socks5",
+	"http":      "http",
+	"hysteria":  "hysteria",
+	"wireguard": "wireguard",
 }
 
 func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
