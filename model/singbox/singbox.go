@@ -46,7 +46,7 @@ type SingBoxOut struct {
 	Peers               []*SingWireguardMultiPeer `json:"peers,omitempty"`
 	PeerPublicKey       string                    `json:"peer_public_key,omitempty"`
 	PreSharedKey        string                    `json:"pre_shared_key,omitempty"`
-	Reserved            []uint8                   `json:"reserved,omitempty"`
+	Reserved            []int64                   `json:"reserved,omitempty"`
 	MTU                 uint                      `json:"mtu,omitempty"`
 }
 
@@ -101,5 +101,5 @@ type SingWireguardMultiPeer struct {
 	PublicKey    string   `json:"public_key,omitempty"`
 	PreSharedKey string   `json:"pre_shared_key,omitempty"`
 	AllowedIps   []string `json:"allowed_ips,omitempty"`
-	Reserved     []uint8  `json:"reserved,omitempty"`
+	Reserved     []int64  `json:"reserved,omitempty"`
 }

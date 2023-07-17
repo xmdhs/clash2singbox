@@ -60,9 +60,10 @@ type Proxies struct {
 	PublicKey           string      `yaml:"public-key"`
 	PreSharedKey        string      `yaml:"pre-shared-key"`
 	PrivateKey          string      `yaml:"private-key"`
-	Reserved            []uint8     `yaml:"reserved"`
-	DialerProxy         string
+	Reserved            *wgReserved `yaml:"reserved"`
+	DialerProxy         string      `yaml:"dialer-proxy"`
 	Peers               []wgPeer
+	MTU                 int `yaml:"mtu"`
 }
 
 type smuxOpts struct {
@@ -99,15 +100,4 @@ type wsOpts struct {
 type realityOpts struct {
 	PublicKey string `yaml:"public-key"`
 	ShortId   string `yaml:"short-id"`
-}
-
-type wgPeer struct {
-	Server       string   `yaml:"server"`
-	Port         int      `yaml:"port"`
-	Ip           string   `yaml:"ip"`
-	Ipv6         string   `yaml:"ipv6"`
-	PublicKey    string   `yaml:"public-key"`
-	PreSharedKey string   `yaml:"pre-shared-key"`
-	Reserved     []uint8  `yaml:"reserved"`
-	AllowedIPs   []string `yaml:"allowed-ips"`
 }
