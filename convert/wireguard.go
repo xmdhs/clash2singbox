@@ -17,7 +17,7 @@ func wireguard(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, e
 	var reserved [3]uint8
 	if len(p.Reserved) > 0 {
 		if len(p.Reserved) != 3 {
-			return nil, fmt.Errorf("invalid reserved value, required 3 bytes, got ", len(p.Reserved))
+			return nil, fmt.Errorf("invalid reserved value, required 3 bytes, got %v", len(p.Reserved))
 		}
 		copy(reserved[:], p.Reserved[:])
 		s.Reserved = reserved[:]
@@ -29,7 +29,7 @@ func wireguard(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, e
 		var reserved [3]uint8
 		if len(peer.Reserved) > 0 {
 			if len(peer.Reserved) != 3 {
-				return nil, fmt.Errorf("invalid reserved value, required 3 bytes, got ", len(p.Reserved))
+				return nil, fmt.Errorf("invalid reserved value, required 3 bytes, got %v", len(p.Reserved))
 			}
 			copy(reserved[:], peer.Reserved[:])
 		}
