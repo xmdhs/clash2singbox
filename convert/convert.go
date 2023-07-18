@@ -53,7 +53,7 @@ var typeMap = map[string]string{
 	"vmess":     "vmess",
 	"vless":     "vless",
 	"trojan":    "trojan",
-	"socks5":    "socks5",
+	"socks5":    "socks",
 	"http":      "http",
 	"hysteria":  "hysteria",
 	"wireguard": "wireguard",
