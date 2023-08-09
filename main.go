@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"errors"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -22,6 +23,7 @@ var (
 	include  string
 	exclude  string
 	insecure bool
+	ignore   bool
 )
 
 //go:embed config.json.template
@@ -34,6 +36,7 @@ func init() {
 	flag.StringVar(&include, "include", "", "urltest 选择的节点")
 	flag.StringVar(&exclude, "exclude", "", "urltest 排除的节点")
 	flag.BoolVar(&insecure, "insecure", false, "所有节点不验证证书")
+	flag.BoolVar(&ignore, "ignore", true, "忽略无法转换的节点")
 	flag.Parse()
 }
 
@@ -64,7 +67,7 @@ func main() {
 
 	s, err := convert.Clash2sing(c)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 	outb, err := os.ReadFile(outPath)
 	if err != nil {

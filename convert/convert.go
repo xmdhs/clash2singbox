@@ -30,6 +30,7 @@ func warpOldConver(f func(*clash.Proxies, *singbox.SingBoxOut) error) func(*clas
 
 func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 	sl := make([]singbox.SingBoxOut, 0, len(c.Proxies)+1)
+	var jerr error
 	for _, v := range c.Proxies {
 		v := v
 		s, t, err := comm(&v)
@@ -38,11 +39,12 @@ func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 		}
 		nsl, err := convertMap[t](&v, s)
 		if err != nil {
-			return nil, fmt.Errorf("clash2sing: %w", err)
+			jerr = errors.Join(jerr, err)
+			continue
 		}
 		sl = append(sl, nsl...)
 	}
-	return sl, nil
+	return sl, jerr
 }
 
 var ErrNotSupportType = errors.New("不支持的类型")
