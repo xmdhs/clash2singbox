@@ -35,7 +35,8 @@ func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 		v := v
 		s, t, err := comm(&v)
 		if err != nil {
-			return nil, fmt.Errorf("clash2sing: %w", err)
+			jerr = errors.Join(jerr, err)
+			continue
 		}
 		nsl, err := convertMap[t](&v, s)
 		if err != nil {
