@@ -19,13 +19,18 @@ func wireguard(p *clash.Proxies, s *singbox.SingBoxOut) (o []singbox.SingBoxOut,
 	s.PreSharedKey = p.PreSharedKey
 	s.PrivateKey = p.PrivateKey
 	// Transform reserved array
-	s.Reserved = slicesConvert[uint8, int64](p.Reserved.Value)
+	if p.Reserved != nil {
+		s.Reserved = slicesConvert[uint8, int64](p.Reserved.Value)
+	}
 	// Dialer-proxy
 	s.Detour = p.DialerProxy
 	s.MTU = uint(p.MTU)
 	// Multi-peers
 	for _, peer := range p.Peers {
-		reserved := slicesConvert[uint8, int64](peer.Reserved.Value)
+		var reserved []int64
+		if peer.Reserved != nil {
+			reserved = slicesConvert[uint8, int64](peer.Reserved.Value)
+		}
 		s.Peers = append(s.Peers, &singbox.SingWireguardMultiPeer{
 			Server:       peer.Server,
 			ServerPort:   peer.Port,
