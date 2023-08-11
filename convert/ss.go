@@ -18,14 +18,15 @@ func ss(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
 	}
 	s.Obfs = p.Obfs
 	s.ProtocolParam = p.ProtocolParam
+	s.Protocol = p.Protocol
 	s.ObfsParam = p.ObfsParam
 
 	if p.Smux.Enabled {
 		s.Multiplex = &singbox.SingMultiplex{
 			Enabled:        true,
-			MaxConnections: Max(p.Smux.MaxConnections, 4),
+			MaxConnections: max(p.Smux.MaxConnections, 4),
 			MinStreams:     p.Smux.MaxStreams,
-			MaxStreams:     Max(p.Smux.MinStreams, 4),
+			MaxStreams:     max(p.Smux.MinStreams, 4),
 			Padding:        p.Smux.Padding,
 			Protocol:       p.Smux.Protocol,
 		}
@@ -48,16 +49,6 @@ func ss(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
 		}
 	}
 	return []singbox.SingBoxOut{*s}, nil
-}
-
-func Max[T ~int](t ...T) T {
-	var max T
-	for _, v := range t {
-		if v > max {
-			max = v
-		}
-	}
-	return max
 }
 
 type obfs struct {
