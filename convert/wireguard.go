@@ -54,6 +54,9 @@ func slicesConvert[T constraints.Integer | constraints.Float, E constraints.Inte
 func addCidr(ipl []string) ([]string, error) {
 	c := make([]string, 0, len(ipl))
 	for _, v := range ipl {
+		if v == "" {
+			continue
+		}
 		p, err := netip.ParsePrefix(v)
 		if err == nil {
 			c = append(c, p.String())
