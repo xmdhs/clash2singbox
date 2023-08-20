@@ -83,7 +83,12 @@ func vless(p *clash.Proxies, s *singbox.SingBoxOut) error {
 		s.Flow = p.Flow
 	}
 	if p.RealityOpts.PublicKey != "" {
-		s.TLS = &singbox.SingTLS{Reality: &singbox.SingReality{}}
+		if s.TLS == nil {
+			s.TLS = &singbox.SingTLS{}
+		}
+		if s.TLS.Reality == nil {
+			s.TLS.Reality = &singbox.SingReality{}
+		}
 		s.TLS.Reality.Enabled = true
 		s.TLS.Reality.PublicKey = p.RealityOpts.PublicKey
 		s.TLS.Reality.ShortID = p.RealityOpts.ShortId
