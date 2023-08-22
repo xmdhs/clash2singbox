@@ -21,5 +21,6 @@
 - socks5
 - http
 - hysteria
+- tuic5
 ## 网页版本
 https://github.com/xmdhs/clash2sfa
