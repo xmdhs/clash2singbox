@@ -21,7 +21,7 @@ func hysteria(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	}
 	s.Obfs = p.Obfs
 	s.TLS.Alpn = p.Alpn
-	if p.Protocol != "udp" || p.Protocol == "" {
+	if p.Protocol != "udp" && p.Protocol != "" {
 		return fmt.Errorf("hysteria: %w", ErrNotSupportType)
 	}
 	if up, err := strconv.Atoi(p.Up); err == nil {
