@@ -83,5 +83,5 @@ func main() {
 		panic(err)
 	}
 
-	os.WriteFile(outPath, outb, 0777)
+	os.WriteFile(outPath, outb, 0644)
 }
