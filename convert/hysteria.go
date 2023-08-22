@@ -11,7 +11,7 @@ import (
 func hysteria(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	p.Tls = true
 	tls(p, s)
-	if p.Ports != "" {
+	if p.Port == "" {
 		return fmt.Errorf("hysteria: %w", ErrNotSupportType)
 	}
 	if p.AuthStr != "" {
