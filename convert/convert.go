@@ -77,5 +77,16 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 	s.ServerPort = port
 	s.Password = p.Password
 
+	if p.Smux.Enabled {
+		s.Multiplex = &singbox.SingMultiplex{
+			Enabled:        true,
+			MaxConnections: max(p.Smux.MaxConnections, 4),
+			MinStreams:     p.Smux.MaxStreams,
+			MaxStreams:     max(p.Smux.MinStreams, 4),
+			Padding:        p.Smux.Padding,
+			Protocol:       p.Smux.Protocol,
+		}
+	}
+
 	return s, s.Type, nil
 }

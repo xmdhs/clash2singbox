@@ -21,16 +21,6 @@ func ss(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
 	s.Protocol = p.Protocol
 	s.ObfsParam = p.ObfsParam
 
-	if p.Smux.Enabled {
-		s.Multiplex = &singbox.SingMultiplex{
-			Enabled:        true,
-			MaxConnections: max(p.Smux.MaxConnections, 4),
-			MinStreams:     p.Smux.MaxStreams,
-			MaxStreams:     max(p.Smux.MinStreams, 4),
-			Padding:        p.Smux.Padding,
-			Protocol:       p.Smux.Protocol,
-		}
-	}
 	if p.UdpOverTcp {
 		s.UdpOverTcp = &singbox.SingUdpOverTcp{Enabled: true}
 	}
