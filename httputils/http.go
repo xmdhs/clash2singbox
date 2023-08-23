@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func HttpGet(cxt context.Context, c *http.Client, url string) ([]byte, error) {
+func HttpGet(cxt context.Context, c *http.Client, url string, maxByte int64) ([]byte, error) {
 	reqs, err := http.NewRequestWithContext(cxt, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("HttpGet: %w", err)
@@ -24,7 +24,7 @@ func HttpGet(cxt context.Context, c *http.Client, url string) ([]byte, error) {
 	if rep.StatusCode != http.StatusOK {
 		return nil, Errpget{Msg: rep.Status, url: url}
 	}
-	b, err := io.ReadAll(rep.Body)
+	b, err := io.ReadAll(io.LimitReader(rep.Body, maxByte))
 	if err != nil {
 		return nil, fmt.Errorf("HttpGet: %w", err)
 	}

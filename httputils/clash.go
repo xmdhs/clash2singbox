@@ -16,7 +16,7 @@ func GetClash(cxt context.Context, hc *http.Client, url string) (clash.Clash, er
 	c := clash.Clash{}
 
 	for _, v := range urls {
-		b, err := HttpGet(cxt, hc, v)
+		b, err := HttpGet(cxt, hc, v, 1000*1000*10)
 		if err != nil {
 			return c, fmt.Errorf("GetClash: %w", err)
 		}
