@@ -60,6 +60,7 @@ func addCidr(ipl []string) ([]string, error) {
 		p, err := netip.ParsePrefix(v)
 		if err == nil {
 			c = append(c, p.String())
+			continue
 		}
 		ipr, err := netip.ParseAddr(v)
 		if err != nil {
