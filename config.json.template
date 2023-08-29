@@ -39,6 +39,7 @@
         {
             "type": "tun",
             "inet4_address": "172.19.0.1/30",
+            "inet6_address": "2001:0470:f9da:fdfa::1/64",
             "sniff": true,
             "sniff_override_destination": true,
             "domain_strategy": "prefer_ipv4",
