@@ -15,17 +15,17 @@
         ],
         "rules": [
             {
+                "outbound": [
+                    "any"
+                ],
+                "server": "local"
+            },
+            {
                 "clash_mode": "global",
                 "server": "remote"
             },
             {
                 "clash_mode": "direct",
-                "server": "local"
-            },
-            {
-                "outbound": [
-                    "any"
-                ],
                 "server": "local"
             },
             {
