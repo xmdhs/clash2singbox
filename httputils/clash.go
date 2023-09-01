@@ -5,27 +5,44 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/xmdhs/clash2singbox/model/clash"
+	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 )
 
-func GetClash(cxt context.Context, hc *http.Client, url string) (clash.Clash, error) {
+func GetClash(ctx context.Context, hc *http.Client, url string) (clash.Clash, error) {
 	urls := strings.Split(url, "|")
 
 	c := clash.Clash{}
 
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(3)
+
+	l := sync.Mutex{}
+
 	for _, v := range urls {
-		b, err := HttpGet(cxt, hc, v, 1000*1000*10)
-		if err != nil {
-			return c, fmt.Errorf("GetClash: %w", err)
-		}
-		lc := clash.Clash{}
-		err = yaml.Unmarshal(b, &lc)
-		if err != nil {
-			return c, fmt.Errorf("GetClash: %w", err)
-		}
-		c.Proxies = append(c.Proxies, lc.Proxies...)
+		v := v
+		g.Go(func() error {
+			b, err := HttpGet(ctx, hc, v, 1000*1000*10)
+			if err != nil {
+				return err
+			}
+			lc := clash.Clash{}
+			err = yaml.Unmarshal(b, &lc)
+			if err != nil {
+				return err
+			}
+			l.Lock()
+			defer l.Unlock()
+			c.Proxies = append(c.Proxies, lc.Proxies...)
+			return nil
+		})
+	}
+	err := g.Wait()
+	if err != nil {
+		return c, fmt.Errorf("GetClash: %w", err)
 	}
 	return c, nil
 }
