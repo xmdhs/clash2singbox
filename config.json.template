@@ -4,12 +4,12 @@
         "servers": [
             {
                 "tag": "remote",
-                "address": "1.1.1.1",
+                "address": "https://1.1.1.1/dns-query",
                 "detour": "select"
             },
             {
                 "tag": "local",
-                "address": "223.5.5.5",
+                "address": "https://223.5.5.5/dns-query",
                 "detour": "direct"
             },
             {
