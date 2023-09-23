@@ -43,7 +43,7 @@ func GetClash(ctx context.Context, hc *http.Client, u string, addTag bool) (clas
 			}
 			if addTag {
 				lc.Proxies = lo.Map(lc.Proxies, func(item clash.Proxies, index int) clash.Proxies {
-					item.Name = fmt.Sprintf("[%s]%s", host, item.Name)
+					item.Name = fmt.Sprintf("[%s]%s", item.Name, host)
 					return item
 				})
 			}
