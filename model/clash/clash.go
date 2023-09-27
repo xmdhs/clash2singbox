@@ -69,6 +69,7 @@ type Proxies struct {
 	UdpRelayMode         string `yaml:"udp-relay-mode"`
 	ReduceRtt            bool   `yaml:"reduce-rtt"`
 	HeartbeatInterval    int    `yaml:"heartbeat-interval"`
+	ObfsPassword         string `yaml:"obfs-password"`
 }
 
 type smuxOpts struct {

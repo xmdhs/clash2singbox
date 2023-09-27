@@ -1,5 +1,7 @@
 package singbox
 
+import "encoding/json"
+
 type SingBoxOut struct {
 	Username             string                    `json:"username,omitempty"`
 	Password             string                    `json:"password,omitempty"`
@@ -21,7 +23,6 @@ type SingBoxOut struct {
 	Network              string                    `json:"network,omitempty"`
 	Plugin               string                    `json:"plugin,omitempty"`
 	PluginOpts           string                    `json:"plugin_opts,omitempty"`
-	Obfs                 string                    `json:"obfs,omitempty"`
 	ObfsParam            string                    `json:"obfs_param,omitempty"`
 	Protocol             string                    `json:"protocol,omitempty"`
 	ProtocolParam        string                    `json:"protocol_param,omitempty"`
@@ -52,6 +53,7 @@ type SingBoxOut struct {
 	UdpRelayMode         string                    `json:"udp_relay_mode,omitempty"`
 	ZeroRttHandshake     bool                      `json:"zero_rtt_handshake,omitempty"`
 	Heartbeat            string                    `json:"heartbeat,omitempty"`
+	Obfs                 *SingObfs                 `json:"obfs,omitempty"`
 }
 
 type SingUdpOverTcp struct {
@@ -106,4 +108,25 @@ type SingWireguardMultiPeer struct {
 	PreSharedKey string   `json:"pre_shared_key,omitempty"`
 	AllowedIps   []string `json:"allowed_ips,omitempty"`
 	Reserved     []int64  `json:"reserved,omitempty"`
+}
+
+type SingObfs struct {
+	Value string
+	Type  string
+}
+
+type singObfsHysteria2 struct {
+	Password string `json:"password"`
+	Type     string `json:"type"`
+}
+
+func (s SingObfs) MarshalJSON() ([]byte, error) {
+	if s.Type == "" {
+		return json.Marshal(s.Value)
+	}
+	ns := singObfsHysteria2{
+		Password: s.Value,
+		Type:     s.Type,
+	}
+	return json.Marshal(ns)
 }

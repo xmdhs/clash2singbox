@@ -36,18 +36,18 @@ func getForList[K, V any](l []K, check func(K) (V, bool)) []V {
 	return sl
 }
 
-func getServers(s []singbox.SingBoxOut) []string {
-	m := map[string]struct{}{}
-	return getForList(s, func(v singbox.SingBoxOut) (string, bool) {
-		server := v.Server
-		_, has := m[server]
-		if server == "" || has {
-			return "", false
-		}
-		m[server] = struct{}{}
-		return server, true
-	})
-}
+// func getServers(s []singbox.SingBoxOut) []string {
+// 	m := map[string]struct{}{}
+// 	return getForList(s, func(v singbox.SingBoxOut) (string, bool) {
+// 		server := v.Server
+// 		_, has := m[server]
+// 		if server == "" || has {
+// 			return "", false
+// 		}
+// 		m[server] = struct{}{}
+// 		return server, true
+// 	})
+// }
 
 func getTags(s []singbox.SingBoxOut) []string {
 	return getForList(s, func(v singbox.SingBoxOut) (string, bool) {

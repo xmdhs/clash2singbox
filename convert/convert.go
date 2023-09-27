@@ -10,19 +10,20 @@ import (
 )
 
 var convertMap = map[string]func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox.SingBoxOut, error){
-	"vmess":        warpOldConver(vmess),
-	"vless":        warpOldConver(vless),
+	"vmess":        oldConver(vmess),
+	"vless":        oldConver(vless),
 	"shadowsocks":  ss,
 	"shadowsocksr": ss,
-	"trojan":       warpOldConver(trojan),
-	"http":         warpOldConver(httpOpts),
-	"socks":        warpOldConver(socks5),
-	"hysteria":     warpOldConver(hysteria),
+	"trojan":       oldConver(trojan),
+	"http":         oldConver(httpOpts),
+	"socks":        oldConver(socks5),
+	"hysteria":     oldConver(hysteria),
+	"hysteria2":    hysteia2,
 	"wireguard":    wireguard,
 	"tuic":         tuic,
 }
 
-func warpOldConver(f func(*clash.Proxies, *singbox.SingBoxOut) error) func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
+func oldConver(f func(*clash.Proxies, *singbox.SingBoxOut) error) func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
 	return func(c *clash.Proxies, p *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
 		err := f(c, p)
 		return []singbox.SingBoxOut{*p}, err
@@ -60,6 +61,7 @@ var typeMap = map[string]string{
 	"socks5":    "socks",
 	"http":      "http",
 	"hysteria":  "hysteria",
+	"hysteria2": "hysteria2",
 	"wireguard": "wireguard",
 	"tuic":      "tuic",
 }
