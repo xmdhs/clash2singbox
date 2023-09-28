@@ -20,8 +20,10 @@ func hysteria(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	} else {
 		s.AuthStr = p.AuthStr1
 	}
-	s.Obfs = &singbox.SingObfs{
-		Value: p.Obfs,
+	if p.Obfs != "" {
+		s.Obfs = &singbox.SingObfs{
+			Value: p.Obfs,
+		}
 	}
 	s.TLS.Alpn = p.Alpn
 	if p.Protocol != "udp" && p.Protocol != "" {
@@ -81,9 +83,11 @@ func hysteia2(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, er
 		return nil, fmt.Errorf("hysteia2: %w", err)
 	}
 	s.Password = p.Password
-	s.Obfs = &singbox.SingObfs{
-		Type:  p.Obfs,
-		Value: p.ObfsPassword,
+	if p.ObfsPassword != "" {
+		s.Obfs = &singbox.SingObfs{
+			Type:  p.Obfs,
+			Value: p.ObfsPassword,
+		}
 	}
 	return []singbox.SingBoxOut{*s}, nil
 }
