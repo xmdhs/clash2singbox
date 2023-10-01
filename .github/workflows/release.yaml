@@ -10,8 +10,7 @@ on:
   # Trigger on push new tag
   push:
     tags:
-      - 'v*.*.*'
-
+      - "v*.*.*"
 
 jobs:
   build-and-publish:
@@ -23,21 +22,22 @@ jobs:
         uses: crazy-max/ghaction-xgo@v3
         with:
           xgo_version: latest
-          go_version: 1.21
+          go_version: latest
           dest: dist
           prefix: clash2singbox
-          targets: windows/386,windows/amd64,linux/386,linux/amd64,darwin/arm64,darwin/amd64
+          targets: windows/386,windows/amd64,linux/386,linux/amd64,linux/arm,linux/arm64,darwin/arm64,darwin/amd64
           # Show less information
           v: false
           x: false
           race: false
           ldflags: -s -w
           buildmode: default
+          trimpath: true
 
       - name: Publish GitHub Releases
         uses: softprops/action-gh-release@v1
         with:
-          name: "clash2singbox ${{ github.ref_name }}" 
+          name: "clash2singbox ${{ github.ref_name }}"
           files: |
             ./dist/*
           token: ${{ secrets.GITHUB_TOKEN }}
