@@ -1,0 +1,43 @@
+name: Build And Publish Releases
+
+# https://github.com/softprops/action-gh-release/issues/236#issuecomment-1150530128
+permissions:
+  contents: write
+
+on:
+  # Allow mannual trigger
+  workflow_dispatch:
+  # Trigger on push new tag
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Compile
+        uses: crazy-max/ghaction-xgo@v3
+        with:
+          xgo_version: latest
+          go_version: latest
+          dest: dist
+          prefix: clash2singbox
+          targets: windows/386,windows/amd64,linux/386,linux/amd64,linux/arm,linux/arm64,darwin/arm64,darwin/amd64
+          # Show less information
+          v: false
+          x: false
+          race: false
+          ldflags: -s -w
+          buildmode: default
+          trimpath: true
+
+      - name: Publish GitHub Releases
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "clash2singbox ${{ github.ref_name }}"
+          files: |
+            ./dist/*
+          token: ${{ secrets.GITHUB_TOKEN }}
