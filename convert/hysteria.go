@@ -93,6 +93,9 @@ func hysteia2(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, er
 }
 
 func anyToMbps(s string) (int, error) {
+	if s == "" {
+		return 0, nil
+	}
 	mbps, err := strconv.Atoi(s)
 	if err == nil {
 		return mbps, nil
