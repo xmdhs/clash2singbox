@@ -1,11 +1,11 @@
 {
     "log": {},
     "dns": {
+        "strategy": "ipv4_only",
         "servers": [
             {
                 "tag": "remote",
                 "address": "https://1.1.1.1/dns-query",
-                "strategy": "ipv4_only",
                 "detour": "select"
             },
             {
