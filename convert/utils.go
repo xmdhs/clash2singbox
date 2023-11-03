@@ -10,8 +10,11 @@ import (
 	"github.com/xmdhs/clash2singbox/model/singbox"
 )
 
-func filter(isinclude bool, reg string, sl []string) []string {
-	r := regexp.MustCompile(reg)
+func filter(isinclude bool, reg string, sl []string) ([]string, error) {
+	r, err := regexp.Compile(reg)
+	if err != nil {
+		return sl, fmt.Errorf("filter: %w", err)
+	}
 	return getForList(sl, func(v string) (string, bool) {
 		has := r.MatchString(v)
 		if has && isinclude {
@@ -21,7 +24,7 @@ func filter(isinclude bool, reg string, sl []string) []string {
 			return v, true
 		}
 		return "", false
-	})
+	}), nil
 }
 
 func getForList[K, V any](l []K, check func(K) (V, bool)) []V {
@@ -63,7 +66,7 @@ func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []i
 	d := map[string]interface{}{}
 	err := json.Unmarshal(b, &d)
 	if err != nil {
-		return nil, fmt.Errorf("patch: %w", err)
+		return nil, fmt.Errorf("Patch: %w", err)
 	}
 	tags := getTags(s)
 
@@ -71,10 +74,16 @@ func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []i
 
 	ftags := tags
 	if include != "" {
-		ftags = filter(true, include, ftags)
+		ftags, err = filter(true, include, ftags)
+		if err != nil {
+			return nil, fmt.Errorf("Patch: %w", err)
+		}
 	}
 	if exclude != "" {
-		ftags = filter(false, exclude, ftags)
+		ftags, err = filter(false, exclude, ftags)
+		if err != nil {
+			return nil, fmt.Errorf("Patch: %w", err)
+		}
 	}
 
 	s = append([]singbox.SingBoxOut{{
@@ -115,7 +124,7 @@ func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []i
 	jw.SetIndent("", "    ")
 	err = jw.Encode(d)
 	if err != nil {
-		return nil, fmt.Errorf("patch: %w", err)
+		return nil, fmt.Errorf("Patch: %w", err)
 	}
 	return bw.Bytes(), nil
 }
