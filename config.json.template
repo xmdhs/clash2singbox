@@ -115,10 +115,6 @@
                     "private"
                 ],
                 "outbound": "direct"
-            },
-            {
-                "geosite": "cn",
-                "outbound": "direct"
             }
         ],
         "auto_detect_interface": true
