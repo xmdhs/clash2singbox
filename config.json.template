@@ -41,6 +41,14 @@
                 "server": "local"
             },
             {
+                "server": "remote",
+                "geosite": "cn@!cn"
+            },
+            {
+                "geosite": "geolocation-!cn@cn",
+                "server": "local"
+            },
+            {
                 "geosite": "cn",
                 "server": "local"
             }
