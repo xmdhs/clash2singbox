@@ -42,9 +42,11 @@ func init() {
 
 func main() {
 	c := clash.Clash{}
+	var singList []any
+	var tags []string
 	if url != "" {
 		var err error
-		c, err = httputils.GetClash(context.TODO(), &http.Client{Timeout: 10 * time.Second}, url, false)
+		c, singList, tags, err = httputils.GetAny(context.TODO(), &http.Client{Timeout: 10 * time.Second}, url, false)
 		if err != nil {
 			panic(err)
 		}
@@ -78,7 +80,7 @@ func main() {
 		}
 	}
 
-	outb, err = convert.Patch(outb, s, include, exclude, nil)
+	outb, err = convert.Patch(outb, s, include, exclude, singList, tags...)
 	if err != nil {
 		panic(err)
 	}
