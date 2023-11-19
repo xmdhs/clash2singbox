@@ -57,6 +57,11 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 				}
 				l.Lock()
 				singList = append(singList, s...)
+				if addTag {
+					t = lo.Map(t, func(item string, index int) string {
+						return fmt.Sprintf("%s[%s]", item, host)
+					})
+				}
 				tags = append(tags, t...)
 				l.Unlock()
 			}
