@@ -63,10 +63,33 @@ func getTags(s []singbox.SingBoxOut) []string {
 }
 
 func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []interface{}, extags ...string) ([]byte, error) {
-	d := map[string]interface{}{}
-	err := json.Unmarshal(b, &d)
+	d, err := PatchMap(b, s, include, exclude, extOut, extags)
 	if err != nil {
 		return nil, fmt.Errorf("Patch: %w", err)
+	}
+	bw := &bytes.Buffer{}
+	jw := json.NewEncoder(bw)
+	jw.SetIndent("", "    ")
+	err = jw.Encode(d)
+	if err != nil {
+		return nil, fmt.Errorf("Patch: %w", err)
+	}
+	return bw.Bytes(), nil
+}
+
+func ToInsecure(c *clash.Clash) {
+	for i := range c.Proxies {
+		p := c.Proxies[i]
+		p.SkipCertVerify = true
+		c.Proxies[i] = p
+	}
+}
+
+func PatchMap(tpl []byte, s []singbox.SingBoxOut, include, exclude string, extOut []interface{}, extags []string) (map[string]any, error) {
+	d := map[string]interface{}{}
+	err := json.Unmarshal(tpl, &d)
+	if err != nil {
+		return nil, fmt.Errorf("PatchMap: %w", err)
 	}
 	tags := getTags(s)
 
@@ -76,13 +99,13 @@ func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []i
 	if include != "" {
 		ftags, err = filter(true, include, ftags)
 		if err != nil {
-			return nil, fmt.Errorf("Patch: %w", err)
+			return nil, fmt.Errorf("PatchMap: %w", err)
 		}
 	}
 	if exclude != "" {
 		ftags, err = filter(false, exclude, ftags)
 		if err != nil {
-			return nil, fmt.Errorf("Patch: %w", err)
+			return nil, fmt.Errorf("PatchMap: %w", err)
 		}
 	}
 
@@ -119,20 +142,5 @@ func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []i
 
 	d["outbounds"] = anyList
 
-	bw := &bytes.Buffer{}
-	jw := json.NewEncoder(bw)
-	jw.SetIndent("", "    ")
-	err = jw.Encode(d)
-	if err != nil {
-		return nil, fmt.Errorf("Patch: %w", err)
-	}
-	return bw.Bytes(), nil
-}
-
-func ToInsecure(c *clash.Clash) {
-	for i := range c.Proxies {
-		p := c.Proxies[i]
-		p.SkipCertVerify = true
-		c.Proxies[i] = p
-	}
+	return d, nil
 }
