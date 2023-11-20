@@ -103,7 +103,9 @@ func getSing(config []byte) ([]any, []string, error) {
 		if _, ok := notNeedType[outtype]; ok {
 			continue
 		}
-		tagsList = append(tagsList, v.Get("tag").String())
+		if outtype != "shadowtls" {
+			tagsList = append(tagsList, v.Get("tag").String())
+		}
 		outList = append(outList, v.Value())
 	}
 	return outList, tagsList, nil
