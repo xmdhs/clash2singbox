@@ -63,7 +63,7 @@ func getTags(s []singbox.SingBoxOut) []string {
 }
 
 func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []interface{}, extags ...string) ([]byte, error) {
-	d, err := PatchMap(b, s, include, exclude, extOut, extags)
+	d, err := PatchMap(b, s, include, exclude, extOut, extags, true)
 	if err != nil {
 		return nil, fmt.Errorf("Patch: %w", err)
 	}
@@ -85,7 +85,14 @@ func ToInsecure(c *clash.Clash) {
 	}
 }
 
-func PatchMap(tpl []byte, s []singbox.SingBoxOut, include, exclude string, extOut []interface{}, extags []string) (map[string]any, error) {
+func PatchMap(
+	tpl []byte,
+	s []singbox.SingBoxOut,
+	include, exclude string,
+	extOut []interface{},
+	extags []string,
+	urltestOut bool,
+) (map[string]any, error) {
 	d := map[string]interface{}{}
 	err := json.Unmarshal(tpl, &d)
 	if err != nil {
@@ -109,12 +116,19 @@ func PatchMap(tpl []byte, s []singbox.SingBoxOut, include, exclude string, extOu
 		}
 	}
 
-	s = append([]singbox.SingBoxOut{{
-		Type:      "selector",
-		Tag:       "select",
-		Outbounds: append([]string{"urltest"}, tags...),
-		Default:   "urltest",
-	}}, s...)
+	if urltestOut {
+		s = append([]singbox.SingBoxOut{{
+			Type:      "selector",
+			Tag:       "select",
+			Outbounds: append([]string{"urltest"}, tags...),
+			Default:   "urltest",
+		}}, s...)
+		s = append(s, singbox.SingBoxOut{
+			Type:      "urltest",
+			Tag:       "urltest",
+			Outbounds: ftags,
+		})
+	}
 
 	s = append(s, singbox.SingBoxOut{
 		Type: "direct",
@@ -127,11 +141,6 @@ func PatchMap(tpl []byte, s []singbox.SingBoxOut, include, exclude string, extOu
 	s = append(s, singbox.SingBoxOut{
 		Type: "dns",
 		Tag:  "dns-out",
-	})
-	s = append(s, singbox.SingBoxOut{
-		Type:      "urltest",
-		Tag:       "urltest",
-		Outbounds: ftags,
 	})
 
 	anyList := make([]any, 0, len(s)+len(extOut))
