@@ -60,13 +60,12 @@
                         "invert": true
                     },
                     {
-                        "geosite": "cn"
+                        "geosite": [
+                            "cn",
+                            "geolocation-!cn@cn"
+                        ]
                     }
                 ],
-                "server": "local"
-            },
-            {
-                "geosite": "geolocation-!cn@cn",
                 "server": "local"
             }
         ],
