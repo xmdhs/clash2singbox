@@ -1,7 +1,6 @@
 {
     "log": {},
     "dns": {
-        "strategy": "ipv4_only",
         "servers": [
             {
                 "tag": "remote",
@@ -16,6 +15,10 @@
             {
                 "address": "rcode://success",
                 "tag": "block"
+            },
+            {
+                "address": "fakeip",
+                "tag": "fakeip"
             }
         ],
         "rules": [
@@ -33,6 +36,14 @@
                 "server": "block"
             },
             {
+                "query_type": [
+                    "A",
+                    "AAAA"
+                ],
+                "rewrite_ttl": 1,
+                "server": "fakeip"
+            },
+            {
                 "clash_mode": "global",
                 "server": "remote"
             },
@@ -41,26 +52,39 @@
                 "server": "local"
             },
             {
-                "server": "remote",
-                "geosite": "cn@!cn"
+                "type": "logical",
+                "mode": "and",
+                "rules": [
+                    {
+                        "geosite": "cn@!cn",
+                        "invert": true
+                    },
+                    {
+                        "geosite": "cn"
+                    }
+                ],
+                "server": "local"
             },
             {
                 "geosite": "geolocation-!cn@cn",
                 "server": "local"
-            },
-            {
-                "geosite": "cn",
-                "server": "local"
             }
-        ]
+        ],
+        "strategy": "prefer_ipv4",
+        "independent_cache": true,
+        "fakeip": {
+            "enabled": true,
+            "inet4_range": "198.18.0.0/15",
+            "inet6_range": "fc00::/18"
+        }
     },
     "inbounds": [
         {
             "type": "tun",
             "inet4_address": "172.19.0.1/30",
             "inet6_address": "2001:0470:f9da:fdfa::1/64",
-            "sniff": true,
             "strict_route": true,
+            "domain_strategy": "prefer_ipv4",
             "mtu": 9000,
             "endpoint_independent_nat": true,
             "auto_route": false
@@ -69,16 +93,14 @@
             "type": "socks",
             "tag": "socks-in",
             "listen": "127.0.0.1",
-            "sniff": true,
-            "domain_strategy": "ipv4_only",
+            "domain_strategy": "prefer_ipv4",
             "listen_port": 2333,
             "users": []
         },
         {
             "type": "mixed",
             "tag": "mixed-in",
-            "sniff": true,
-            "domain_strategy": "ipv4_only",
+            "domain_strategy": "prefer_ipv4",
             "listen": "127.0.0.1",
             "listen_port": 2334,
             "set_system_proxy": true,
@@ -106,7 +128,7 @@
                 "outbound": "block"
             },
             {
-                "protocol": "dns",
+                "port": 53,
                 "outbound": "dns-out"
             },
             {
