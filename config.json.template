@@ -56,13 +56,13 @@
                 "mode": "and",
                 "rules": [
                     {
-                        "geosite": "cn@!cn",
+                        "geosite": "geolocation-!cn",
                         "invert": true
                     },
                     {
                         "geosite": [
                             "cn",
-                            "geolocation-!cn@cn"
+                            "category-companies@cn"
                         ]
                     }
                 ],
