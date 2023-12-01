@@ -110,11 +110,6 @@ func vmessWsOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	for k, v := range p.WsOpts.Headers {
 		m[k] = []string{v}
 	}
-	host := p.Servername
-	if host == "" {
-		host = p.WsOpts.Headers["Host"]
-	}
-	s.Transport.Host = host
 	s.Transport.Headers = m
 	s.Transport.Path = p.WsOpts.Path
 	s.Transport.EarlyDataHeaderName = p.WsOpts.EarlyDataHeaderName
