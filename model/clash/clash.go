@@ -101,6 +101,7 @@ type wsOpts struct {
 	Headers             map[string]string `yaml:"headers"`
 	MaxEarlyData        int               `yaml:"max-early-data"`
 	Path                string            `yaml:"path"`
+	V2rayHttpUpgrade    bool              `yaml:"v2ray-http-upgrade"`
 }
 
 type realityOpts struct {
