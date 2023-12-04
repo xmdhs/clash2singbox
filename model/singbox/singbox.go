@@ -87,7 +87,7 @@ type SingTransport struct {
 	Type                string              `json:"type,omitempty"`
 	EarlyDataHeaderName string              `json:"early_data_header_name,omitempty"`
 	MaxEarlyData        int                 `json:"max_early_data,omitempty"`
-	Host                any                 `json:"host,omitempty"`
+	Host                []string            `json:"host,omitempty"`
 	Method              string              `json:"method,omitempty"`
 	ServiceName         string              `json:"service_name,omitempty"`
 }
