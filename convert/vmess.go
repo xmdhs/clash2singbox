@@ -107,8 +107,22 @@ func vmessWsOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	}
 	s.Transport.Type = t
 	m := map[string][]string{}
-	for k, v := range p.WsOpts.Headers {
-		m[k] = []string{v}
+
+	if len(p.WsHeaders) != 0 {
+		for k, v := range p.WsHeaders {
+			m[k] = []string{v}
+		}
+	} else {
+		for k, v := range p.WsOpts.Headers {
+			m[k] = []string{v}
+		}
+	}
+	if p.WsOpts.V2rayHttpUpgrade {
+		host := p.Servername
+		if host == "" {
+			host = p.WsOpts.Headers["Host"]
+		}
+		s.Transport.Host = host
 	}
 	s.Transport.Headers = m
 	s.Transport.Path = p.WsOpts.Path

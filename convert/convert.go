@@ -10,17 +10,17 @@ import (
 )
 
 var convertMap = map[string]func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox.SingBoxOut, error){
-	"vmess":        oldConver(vmess),
-	"vless":        oldConver(vless),
-	"shadowsocks":  ss,
-	"shadowsocksr": ss,
-	"trojan":       oldConver(trojan),
-	"http":         oldConver(httpOpts),
-	"socks":        oldConver(socks5),
-	"hysteria":     oldConver(hysteria),
-	"hysteria2":    hysteia2,
-	"wireguard":    wireguard,
-	"tuic":         tuic,
+	"vmess":       oldConver(vmess),
+	"vless":       oldConver(vless),
+	"shadowsocks": ss,
+	// "shadowsocksr": ss,
+	"trojan":    oldConver(trojan),
+	"http":      oldConver(httpOpts),
+	"socks":     oldConver(socks5),
+	"hysteria":  oldConver(hysteria),
+	"hysteria2": hysteia2,
+	"wireguard": wireguard,
+	"tuic":      tuic,
 }
 
 func oldConver(f func(*clash.Proxies, *singbox.SingBoxOut) error) func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
@@ -53,8 +53,8 @@ func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 var ErrNotSupportType = errors.New("不支持的类型")
 
 var typeMap = map[string]string{
-	"ss":        "shadowsocks",
-	"ssr":       "shadowsocksr",
+	"ss": "shadowsocks",
+	// "ssr":       "shadowsocksr",
 	"vmess":     "vmess",
 	"vless":     "vless",
 	"trojan":    "trojan",
