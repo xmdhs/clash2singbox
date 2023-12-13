@@ -70,7 +70,7 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 	s := &singbox.SingBoxOut{}
 	s.Type = typeMap[p.Type]
 	if s.Type == "" {
-		return nil, "", fmt.Errorf("comm: %w", ErrNotSupportType)
+		return nil, "", fmt.Errorf("comm: %w %v", ErrNotSupportType, p.Type)
 	}
 	s.Tag = p.Name
 	s.Server = p.Server
