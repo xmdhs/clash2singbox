@@ -5,7 +5,8 @@ import (
 )
 
 type Clash struct {
-	Proxies []Proxies `yaml:"proxies"`
+	Proxies    []Proxies    `yaml:"proxies"`
+	ProxyGroup []ProxyGroup `yaml:"proxy-groups"`
 }
 
 type Proxies struct {
@@ -108,4 +109,10 @@ type wsOpts struct {
 type realityOpts struct {
 	PublicKey string `yaml:"public-key"`
 	ShortId   string `yaml:"short-id"`
+}
+
+type ProxyGroup struct {
+	Name    string   `yaml:"name"`
+	Type    string   `yaml:"type"`
+	Proxies []string `yaml:"proxies"`
 }

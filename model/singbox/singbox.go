@@ -54,6 +54,7 @@ type SingBoxOut struct {
 	ZeroRttHandshake     bool                      `json:"zero_rtt_handshake,omitempty"`
 	Heartbeat            string                    `json:"heartbeat,omitempty"`
 	Obfs                 *SingObfs                 `json:"obfs,omitempty"`
+	Ignored              bool                      `json:"-"`
 }
 
 type SingUdpOverTcp struct {

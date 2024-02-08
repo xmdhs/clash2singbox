@@ -70,6 +70,12 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 					item.Name = fmt.Sprintf("%s[%s]", item.Name, host)
 					return item
 				})
+				lc.ProxyGroup = lo.Map(lc.ProxyGroup, func(item clash.ProxyGroup, index int) clash.ProxyGroup {
+					item.Proxies = lo.Map(item.Proxies, func(item string, index int) string {
+						return fmt.Sprintf("%s[%s]", item, host)
+					})
+					return item
+				})
 			}
 			l.Lock()
 			defer l.Unlock()
