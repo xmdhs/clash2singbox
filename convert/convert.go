@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/samber/lo"
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"github.com/xmdhs/clash2singbox/model/singbox"
 )
@@ -32,7 +31,7 @@ func oldConver(f func(*clash.Proxies, *singbox.SingBoxOut) error) func(*clash.Pr
 }
 
 func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
-	slm := make(map[string]singbox.SingBoxOut, len(c.Proxies)+1)
+	sl := make([]singbox.SingBoxOut, 0, len(c.Proxies)+1)
 	var jerr error
 	for _, v := range c.Proxies {
 		v := v
@@ -46,11 +45,12 @@ func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 			jerr = errors.Join(jerr, err)
 			continue
 		}
-		for _, v := range nsl {
-			slm[v.Tag] = v
-		}
+		sl = append(sl, nsl...)
 	}
-	sl := lo.Values(slm)
+	slm := make(map[string]singbox.SingBoxOut, len(c.Proxies)+1)
+	for _, v := range sl {
+		slm[v.Tag] = v
+	}
 	for _, v := range c.ProxyGroup {
 		if v.Type != "relay" {
 			continue
