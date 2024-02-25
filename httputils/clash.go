@@ -87,9 +87,6 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 	if err != nil {
 		return c, nil, nil, fmt.Errorf("GetAny: %w", err)
 	}
-	if err != nil {
-		return c, nil, nil, fmt.Errorf("GetAny: %w", err)
-	}
 	return c, singList, tags, nil
 }
 
