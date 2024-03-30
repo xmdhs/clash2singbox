@@ -13,7 +13,7 @@ func tuic(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, error)
 	s.UUID = p.Uuid
 	s.CongestionController = p.CongestionController
 	s.UdpRelayMode = p.UdpRelayMode
-	s.ZeroRttHandshake = p.ReduceRtt
+	s.ZeroRttHandshake = bool(p.ReduceRtt)
 	s.Heartbeat = fmt.Sprintf("%vms", p.HeartbeatInterval)
 	if p.IP != "" {
 		s.Server = p.IP

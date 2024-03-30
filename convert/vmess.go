@@ -10,7 +10,7 @@ import (
 func tls(p *clash.Proxies, s *singbox.SingBoxOut) {
 	if p.Tls {
 		s.TLS = &singbox.SingTLS{}
-		s.TLS.Enabled = p.Tls
+		s.TLS.Enabled = bool(p.Tls)
 		if p.Servername != "" {
 			s.TLS.ServerName = p.Servername
 		} else if p.Sni != "" {
@@ -27,14 +27,14 @@ func tls(p *clash.Proxies, s *singbox.SingBoxOut) {
 				s.TLS.Utls.Fingerprint = p.Fingerprint
 			}
 		}
-		s.TLS.Insecure = p.SkipCertVerify
+		s.TLS.Insecure = bool(p.SkipCertVerify)
 		s.TLS.Alpn = p.Alpn
 	}
 }
 
 func vmess(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	tls(p, s)
-	s.AlterID = p.AlterId
+	s.AlterID = int(p.AlterId)
 	s.UUID = p.Uuid
 	s.Security = p.Cipher
 	if p.WsOpts.Path != "" || p.Network == "ws" {
@@ -127,7 +127,7 @@ func vmessWsOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	s.Transport.Headers = m
 	s.Transport.Path = p.WsOpts.Path
 	s.Transport.EarlyDataHeaderName = p.WsOpts.EarlyDataHeaderName
-	s.Transport.MaxEarlyData = p.WsOpts.MaxEarlyData
+	s.Transport.MaxEarlyData = int(p.WsOpts.MaxEarlyData)
 	return nil
 }
 

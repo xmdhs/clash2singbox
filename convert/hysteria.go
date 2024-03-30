@@ -2,8 +2,8 @@ package convert
 
 import (
 	"fmt"
-	"strconv"
 	"regexp"
+	"strconv"
 
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"github.com/xmdhs/clash2singbox/model/singbox"
@@ -40,33 +40,21 @@ func hysteria(p *clash.Proxies, s *singbox.SingBoxOut) error {
 		s.Down = p.Down
 	}
 	if p.RecvWindow != 0 {
-		s.RecvWindow = p.RecvWindow
+		s.RecvWindow = int(p.RecvWindow)
 	} else {
-		s.RecvWindow = p.RecvWindow1
+		s.RecvWindow = int(p.RecvWindow1)
 	}
 	if p.RecvWindowConn != 0 {
-		s.RecvWindowConn = p.RecvWindowConn
+		s.RecvWindowConn = int(p.RecvWindowConn)
 	} else {
-		s.RecvWindowConn = p.RecvWindowConn1
+		s.RecvWindowConn = int(p.RecvWindowConn1)
 	}
 	if p.CaStr != "" {
 		s.TLS.Certificate = p.CaStr
 	} else {
 		s.TLS.Certificate = p.CaStr1
 	}
-	disableMtuDiscovery := false
-	switch v := p.DisableMtuDiscovery.(type) {
-	case int:
-		if v == 1 {
-			disableMtuDiscovery = true
-		}
-	case bool:
-		if v {
-			disableMtuDiscovery = true
-		}
-	}
-
-	s.DisableMtuDiscovery = disableMtuDiscovery
+	s.DisableMtuDiscovery = bool(p.DisableMtuDiscovery)
 	return nil
 }
 
@@ -92,18 +80,17 @@ func hysteia2(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, er
 	return []singbox.SingBoxOut{*s}, nil
 }
 
-
 var rateStringRegexp = regexp.MustCompile(`^(\d+)\s*([KMGT]?)([Bb])ps$`)
 
 func anyToMbps(s string) (int, error) {
 	if s == "" {
 		return 0, nil
 	}
-	
+
 	if mb, err := strconv.Atoi(s); err == nil {
 		return mb, nil
 	}
-	
+
 	m := rateStringRegexp.FindStringSubmatch(s)
 	if m == nil {
 		return 0, fmt.Errorf("anyToMbps: %w", ErrNotSupportType)

@@ -33,7 +33,7 @@ func wireguard(p *clash.Proxies, s *singbox.SingBoxOut) (o []singbox.SingBoxOut,
 		}
 		s.Peers = append(s.Peers, &singbox.SingWireguardMultiPeer{
 			Server:       peer.Server,
-			ServerPort:   peer.Port,
+			ServerPort:   int(peer.Port),
 			PublicKey:    peer.PublicKey,
 			PreSharedKey: peer.PreSharedKey,
 			AllowedIps:   peer.AllowedIPs,

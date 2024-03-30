@@ -16,10 +16,10 @@ type Proxies struct {
 	Port                 string            `yaml:"port"`
 	Cipher               string            `yaml:"cipher"`
 	Uuid                 string            `yaml:"uuid"`
-	AlterId              int               `yaml:"alterId"`
-	Udp                  bool              `yaml:"udp"`
-	Tls                  bool              `yaml:"tls"`
-	SkipCertVerify       bool              `yaml:"skip-cert-verify"`
+	AlterId              MyInt             `yaml:"alterId"`
+	Udp                  MyBool            `yaml:"udp"`
+	Tls                  MyBool            `yaml:"tls"`
+	SkipCertVerify       MyBool            `yaml:"skip-cert-verify"`
 	Servername           string            `yaml:"servername"`
 	Network              string            `yaml:"network"`
 	WsOpts               wsOpts            `yaml:"ws-opts"`
@@ -46,17 +46,17 @@ type Proxies struct {
 	AuthStr1             string            `yaml:"auth_str"`
 	CaStr                string            `yaml:"ca-str"`
 	CaStr1               string            `yaml:"ca_str"`
-	DisableMtuDiscovery  any               `yaml:"disable_mtu_discovery"`
+	DisableMtuDiscovery  MyBool            `yaml:"disable_mtu_discovery"`
 	Down                 string            `yaml:"down"`
-	FastOpen             bool              `yaml:"fast-open"`
-	RecvWindow           int               `yaml:"recv-window"`
-	RecvWindowConn       int               `yaml:"recv-window-conn"`
-	RecvWindow1          int               `yaml:"recv_window"`
-	RecvWindowConn1      int               `yaml:"recv_window_conn"`
+	FastOpen             MyBool            `yaml:"fast-open"`
+	RecvWindow           MyInt             `yaml:"recv-window"`
+	RecvWindowConn       MyInt             `yaml:"recv-window-conn"`
+	RecvWindow1          MyInt             `yaml:"recv_window"`
+	RecvWindowConn1      MyInt             `yaml:"recv_window_conn"`
 	Up                   string            `yaml:"up"`
 	Ports                string            `yaml:"ports"`
 	Smux                 smuxOpts          `yaml:"smux"`
-	UdpOverTcp           bool              `yaml:"udp-over-tcp"`
+	UdpOverTcp           MyBool            `yaml:"udp-over-tcp"`
 	IP                   string            `yaml:"ip"`
 	IPv6                 string            `yaml:"ipv6"`
 	PublicKey            string            `yaml:"public-key"`
@@ -65,21 +65,21 @@ type Proxies struct {
 	Reserved             *wgReserved       `yaml:"reserved"`
 	DialerProxy          string            `yaml:"dialer-proxy"`
 	Peers                []wgPeer
-	MTU                  int    `yaml:"mtu"`
-	DisableSni           bool   `yaml:"disable-sni"`
+	MTU                  MyInt  `yaml:"mtu"`
+	DisableSni           MyBool `yaml:"disable-sni"`
 	CongestionController string `yaml:"congestion-controller"`
 	UdpRelayMode         string `yaml:"udp-relay-mode"`
-	ReduceRtt            bool   `yaml:"reduce-rtt"`
-	HeartbeatInterval    int    `yaml:"heartbeat-interval"`
+	ReduceRtt            MyBool `yaml:"reduce-rtt"`
+	HeartbeatInterval    MyInt  `yaml:"heartbeat-interval"`
 	ObfsPassword         string `yaml:"obfs-password"`
 }
 
 type smuxOpts struct {
-	Enabled        bool   `yaml:"enabled"`
-	MaxConnections int    `yaml:"max-connections"`
-	MaxStreams     int    `yaml:"max-streams"`
-	MinStreams     int    `yaml:"min-streams"`
-	Padding        bool   `yaml:"padding"`
+	Enabled        MyBool `yaml:"enabled"`
+	MaxConnections MyInt  `yaml:"max-connections"`
+	MaxStreams     MyInt  `yaml:"max-streams"`
+	MinStreams     MyInt  `yaml:"min-streams"`
+	Padding        MyBool `yaml:"padding"`
 	Protocol       string `yaml:"protocol"`
 }
 
@@ -101,9 +101,9 @@ type h2Opts struct {
 type wsOpts struct {
 	EarlyDataHeaderName string            `yaml:"early-data-header-name"`
 	Headers             map[string]string `yaml:"headers"`
-	MaxEarlyData        int               `yaml:"max-early-data"`
+	MaxEarlyData        MyInt             `yaml:"max-early-data"`
 	Path                string            `yaml:"path"`
-	V2rayHttpUpgrade    bool              `yaml:"v2ray-http-upgrade"`
+	V2rayHttpUpgrade    MyBool            `yaml:"v2ray-http-upgrade"`
 }
 
 type realityOpts struct {
