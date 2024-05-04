@@ -73,6 +73,7 @@
             "domain_strategy": "prefer_ipv4",
             "mtu": 9000,
             "endpoint_independent_nat": true,
+            "sniff": true,
             "auto_route": false
         },
         {
