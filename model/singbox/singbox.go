@@ -55,6 +55,8 @@ type SingBoxOut struct {
 	Heartbeat            string                    `json:"heartbeat,omitempty"`
 	Obfs                 *SingObfs                 `json:"obfs,omitempty"`
 	Ignored              bool                      `json:"-"`
+	TcpFastOpen          bool                      `json:"tcp_fast_open,omitempty"`
+	TcpMultiPath         bool                      `json:"tcp_multi_path,omitempty"`
 }
 
 type SingUdpOverTcp struct {

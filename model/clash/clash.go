@@ -72,6 +72,8 @@ type Proxies struct {
 	ReduceRtt            MyBool `yaml:"reduce-rtt"`
 	HeartbeatInterval    MyInt  `yaml:"heartbeat-interval"`
 	ObfsPassword         string `yaml:"obfs-password"`
+	Tfo                  bool   `yaml:"tfo"`
+	Mptcp                bool   `yaml:"mptcp"`
 }
 
 type smuxOpts struct {

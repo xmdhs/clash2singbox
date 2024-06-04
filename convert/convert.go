@@ -105,6 +105,8 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 			s.Multiplex.MaxConnections = max(int(p.Smux.MaxConnections), 4)
 		}
 	}
+	s.TcpFastOpen = p.Tfo
+	s.TcpMultiPath = p.Mptcp
 
 	return s, s.Type, nil
 }
