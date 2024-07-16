@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/httputils"
 	"github.com/xmdhs/clash2singbox/model/clash"
@@ -42,7 +43,7 @@ func init() {
 
 func main() {
 	c := clash.Clash{}
-	var singList []any
+	var singList []map[string]any
 	var tags []string
 	if url != "" {
 		var err error
@@ -80,7 +81,9 @@ func main() {
 		}
 	}
 
-	outb, err = convert.Patch(outb, s, include, exclude, singList, tags...)
+	outb, err = convert.Patch(outb, s, include, exclude, lo.Map(singList, func(item map[string]any, index int) any {
+		return item
+	}), tags...)
 	if err != nil {
 		panic(err)
 	}
