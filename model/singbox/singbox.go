@@ -57,6 +57,7 @@ type SingBoxOut struct {
 	Ignored              bool                      `json:"-"`
 	TcpFastOpen          bool                      `json:"tcp_fast_open,omitempty"`
 	TcpMultiPath         bool                      `json:"tcp_multi_path,omitempty"`
+	Visible              []string                  `json:"-"`
 }
 
 type SingUdpOverTcp struct {

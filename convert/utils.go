@@ -55,7 +55,7 @@ func getForList[K, V any](l []K, check func(K) (V, bool)) []V {
 func getTags(s []singbox.SingBoxOut) []string {
 	return getForList(s, func(v singbox.SingBoxOut) (string, bool) {
 		tag := v.Tag
-		if tag == "" || v.Ignored {
+		if tag == "" || v.Ignored || len(v.Visible) != 0 {
 			return "", false
 		}
 		return tag, true

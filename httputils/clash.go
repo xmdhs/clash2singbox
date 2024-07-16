@@ -24,11 +24,11 @@ func GetClash(ctx context.Context, hc *http.Client, u string, addTag bool) (clas
 	return c, nil
 }
 
-func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.Clash, []any, []string, error) {
+func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.Clash, []map[string]any, []string, error) {
 	urls := strings.Split(u, "|")
 
 	c := clash.Clash{}
-	singList := []any{}
+	singList := []map[string]any{}
 	tags := []string{}
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -92,13 +92,13 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 
 var ErrJson = errors.New("错误的格式")
 
-func getSing(config []byte) ([]any, []string, error) {
+func getSing(config []byte) ([]map[string]any, []string, error) {
 	if !gjson.Valid(string(config)) {
 		return nil, nil, fmt.Errorf("getSing: %w", ErrJson)
 	}
 
 	out := gjson.GetBytes(config, "outbounds").Array()
-	outList := make([]any, 0, len(out))
+	outList := make([]map[string]any, 0, len(out))
 	tagsList := make([]string, 0, len(out))
 
 	for _, v := range out {
@@ -106,10 +106,13 @@ func getSing(config []byte) ([]any, []string, error) {
 		if _, ok := notNeedType[outtype]; ok {
 			continue
 		}
-		if outtype != "shadowtls" {
-			tagsList = append(tagsList, v.Get("tag").String())
+		m, ok := v.Value().(map[string]any)
+		if ok {
+			outList = append(outList, m)
+			if outtype != "shadowtls" {
+				tagsList = append(tagsList, v.Get("tag").String())
+			}
 		}
-		outList = append(outList, v.Value())
 	}
 	return outList, tagsList, nil
 }
