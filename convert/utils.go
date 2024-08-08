@@ -116,38 +116,39 @@ func PatchMap(
 		}
 	}
 
+	anyList := make([]any, 0, len(s)+len(extOut)+5)
+
 	if urltestOut {
-		s = append([]singbox.SingBoxOut{{
+		anyList = append(anyList, singbox.SingBoxOut{
 			Type:      "selector",
 			Tag:       "select",
 			Outbounds: append([]string{"urltest"}, tags...),
 			Default:   "urltest",
-		}}, s...)
-		s = append(s, singbox.SingBoxOut{
+		})
+		anyList = append(anyList, singbox.SingBoxOut{
 			Type:      "urltest",
 			Tag:       "urltest",
 			Outbounds: ftags,
 		})
 	}
 
-	s = append(s, singbox.SingBoxOut{
-		Type: "direct",
-		Tag:  "direct",
-	})
-	s = append(s, singbox.SingBoxOut{
-		Type: "block",
-		Tag:  "block",
-	})
-	s = append(s, singbox.SingBoxOut{
-		Type: "dns",
-		Tag:  "dns-out",
-	})
-
-	anyList := make([]any, 0, len(s)+len(extOut))
+	anyList = append(anyList, extOut...)
 	for _, v := range s {
 		anyList = append(anyList, v)
 	}
-	anyList = append(anyList, extOut...)
+
+	anyList = append(anyList, singbox.SingBoxOut{
+		Type: "direct",
+		Tag:  "direct",
+	})
+	anyList = append(anyList, singbox.SingBoxOut{
+		Type: "block",
+		Tag:  "block",
+	})
+	anyList = append(anyList, singbox.SingBoxOut{
+		Type: "dns",
+		Tag:  "dns-out",
+	})
 
 	d["outbounds"] = anyList
 
