@@ -51,17 +51,16 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 			lc := clash.Clash{}
 			err = yaml.Unmarshal(b, &lc)
 			if err != nil || len(lc.Proxies) == 0 {
-				s, t, err := getSing(b)
+				h := ""
+				if addTag {
+					h = host
+				}
+				s, t, err := getSing(b, h)
 				if err != nil {
 					return err
 				}
 				l.Lock()
 				singList = append(singList, s...)
-				if addTag {
-					t = lo.Map(t, func(item string, index int) string {
-						return fmt.Sprintf("%s[%s]", item, host)
-					})
-				}
 				tags = append(tags, t...)
 				l.Unlock()
 			}
@@ -92,7 +91,7 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 
 var ErrJson = errors.New("错误的格式")
 
-func getSing(config []byte) ([]map[string]any, []string, error) {
+func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 	if !gjson.Valid(string(config)) {
 		return nil, nil, fmt.Errorf("getSing: %w", ErrJson)
 	}
@@ -108,9 +107,14 @@ func getSing(config []byte) ([]map[string]any, []string, error) {
 		}
 		m, ok := v.Value().(map[string]any)
 		if ok {
+			tag := v.Get("tag").String()
+			if host != "" {
+				tag = fmt.Sprintf("%s[%s]", tag, host)
+				m["tag"] = tag
+			}
 			outList = append(outList, m)
 			if outtype != "shadowtls" {
-				tagsList = append(tagsList, v.Get("tag").String())
+				tagsList = append(tagsList, tag)
 			}
 		}
 	}
