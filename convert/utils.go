@@ -63,7 +63,7 @@ func getTags(s []singbox.SingBoxOut) []string {
 }
 
 func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []interface{}, extags ...string) ([]byte, error) {
-	d, err := PatchMap(b, s, include, exclude, extOut, extags, true)
+	d, err := PatchMap(b, s, include, exclude, extOut, extags, true, true)
 	if err != nil {
 		return nil, fmt.Errorf("Patch: %w", err)
 	}
@@ -92,6 +92,7 @@ func PatchMap(
 	extOut []interface{},
 	extags []string,
 	urltestOut bool,
+	outFields bool,
 ) (map[string]any, error) {
 	d := map[string]interface{}{}
 	err := json.Unmarshal(tpl, &d)
@@ -141,14 +142,17 @@ func PatchMap(
 		Type: "direct",
 		Tag:  "direct",
 	})
-	anyList = append(anyList, singbox.SingBoxOut{
-		Type: "block",
-		Tag:  "block",
-	})
-	anyList = append(anyList, singbox.SingBoxOut{
-		Type: "dns",
-		Tag:  "dns-out",
-	})
+
+	if outFields {
+		anyList = append(anyList, singbox.SingBoxOut{
+			Type: "block",
+			Tag:  "block",
+		})
+		anyList = append(anyList, singbox.SingBoxOut{
+			Type: "dns",
+			Tag:  "dns-out",
+		})
+	}
 
 	d["outbounds"] = anyList
 
