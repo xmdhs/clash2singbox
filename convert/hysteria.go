@@ -2,8 +2,10 @@ package convert
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"github.com/xmdhs/clash2singbox/model/singbox"
@@ -12,8 +14,15 @@ import (
 func hysteria(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	p.Tls = true
 	tls(p, s)
-	if p.Port == "" {
+	if p.Port == "" || p.Ports == "" {
 		return fmt.Errorf("hysteria: %w", ErrNotSupportType)
+	}
+	if p.Ports != "" {
+		port, err := portsToPort(p.Ports)
+		if err != nil {
+			return fmt.Errorf("hysteria: %w", err)
+		}
+		s.ServerPort = port
 	}
 	if p.AuthStr != "" {
 		s.AuthStr = p.AuthStr
@@ -61,6 +70,13 @@ func hysteria(p *clash.Proxies, s *singbox.SingBoxOut) error {
 func hysteia2(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
 	p.Tls = true
 	tls(p, s)
+	if p.Ports != "" {
+		port, err := portsToPort(p.Ports)
+		if err != nil {
+			return nil, fmt.Errorf("hysteia2: %w", err)
+		}
+		s.ServerPort = port
+	}
 	var err error
 	s.UpMbps, err = anyToMbps(p.Up)
 	if err != nil {
@@ -119,4 +135,31 @@ func anyToMbps(s string) (int, error) {
 		mb = 1
 	}
 	return mb, nil
+}
+
+func portsToPort(ports string) (int, error) {
+	portsList := []string{}
+	for _, tmp := range strings.Split(ports, ",") {
+		portsList = append(portsList, strings.Split(tmp, "/")...)
+	}
+	portStr := portsList[rand.N(len(portsList))]
+	if l := strings.Split(portStr, "-"); len(l) == 2 {
+		endPort, err := strconv.Atoi(l[1])
+		if err != nil {
+			return 0, fmt.Errorf("portsToPort: %w", err)
+		}
+		startPort, err := strconv.Atoi(l[0])
+		if err != nil {
+			return 0, fmt.Errorf("portsToPort: %w", err)
+		}
+		if endPort < startPort {
+			return 0, fmt.Errorf("portsToPort: %w", ErrNotSupportType)
+		}
+		return rand.N(endPort-startPort+1) + startPort, nil
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return 0, fmt.Errorf("portsToPort: %w", err)
+	}
+	return port, nil
 }
