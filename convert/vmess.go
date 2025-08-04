@@ -18,17 +18,26 @@ func tls(p *clash.Proxies, s *singbox.SingBoxOut) {
 		} else {
 			s.TLS.ServerName = p.Server
 		}
-		if p.Fingerprint != "" || p.ClientFingerprint != "" {
+		if p.ClientFingerprint != "" {
 			s.TLS.Utls = &singbox.SingUtls{}
 			s.TLS.Utls.Enabled = true
 			if p.ClientFingerprint != "" {
 				s.TLS.Utls.Fingerprint = p.ClientFingerprint
-			} else {
-				s.TLS.Utls.Fingerprint = p.Fingerprint
 			}
 		}
 		s.TLS.Insecure = bool(p.SkipCertVerify)
 		s.TLS.Alpn = p.Alpn
+	}
+	if p.RealityOpts.PublicKey != "" {
+		if s.TLS == nil {
+			s.TLS = &singbox.SingTLS{}
+		}
+		if s.TLS.Reality == nil {
+			s.TLS.Reality = &singbox.SingReality{}
+		}
+		s.TLS.Reality.Enabled = true
+		s.TLS.Reality.PublicKey = p.RealityOpts.PublicKey
+		s.TLS.Reality.ShortID = p.RealityOpts.ShortId
 	}
 }
 
@@ -82,17 +91,6 @@ func vless(p *clash.Proxies, s *singbox.SingBoxOut) error {
 			return fmt.Errorf("vless: Flow %w", ErrNotSupportType)
 		}
 		s.Flow = p.Flow
-	}
-	if p.RealityOpts.PublicKey != "" {
-		if s.TLS == nil {
-			s.TLS = &singbox.SingTLS{}
-		}
-		if s.TLS.Reality == nil {
-			s.TLS.Reality = &singbox.SingReality{}
-		}
-		s.TLS.Reality.Enabled = true
-		s.TLS.Reality.PublicKey = p.RealityOpts.PublicKey
-		s.TLS.Reality.ShortID = p.RealityOpts.ShortId
 	}
 	return nil
 }

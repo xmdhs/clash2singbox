@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/xmdhs/clash2singbox/model"
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"github.com/xmdhs/clash2singbox/model/singbox"
 )
@@ -67,16 +68,26 @@ func hysteria(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	return nil
 }
 
-func hysteia2(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
+func hysteia2(p *clash.Proxies, s *singbox.SingBoxOut, v model.SingBoxVer) ([]singbox.SingBoxOut, error) {
 	p.Tls = true
 	tls(p, s)
+
 	if p.Ports != "" {
-		port, err := portsToPort(p.Ports)
-		if err != nil {
-			return nil, fmt.Errorf("hysteia2: %w", err)
+		if v >= model.SING112 {
+			var err error
+			s.ServerPorts, err = portsToPorts(p.Ports)
+			if err != nil {
+				return nil, fmt.Errorf("hysteia2: %w", err)
+			}
+		} else {
+			port, err := portsToPort(p.Ports)
+			if err != nil {
+				return nil, fmt.Errorf("hysteia2: %w", err)
+			}
+			s.ServerPort = port
 		}
-		s.ServerPort = port
 	}
+
 	var err error
 	s.UpMbps, err = anyToMbps(p.Up)
 	if err != nil {
@@ -162,4 +173,31 @@ func portsToPort(ports string) (int, error) {
 		return 0, fmt.Errorf("portsToPort: %w", err)
 	}
 	return port, nil
+}
+
+func portsToPorts(ports string) ([]string, error) {
+	portsList := []string{}
+	for _, tmp := range strings.Split(ports, ",") {
+		portsList = append(portsList, strings.Split(tmp, "/")...)
+	}
+	pl := []string{}
+	for _, v := range portsList {
+		if l := strings.Split(v, "-"); len(l) == 2 {
+			endPort, err := strconv.Atoi(l[1])
+			if err != nil {
+				return nil, fmt.Errorf("portsToPorts: %w", err)
+			}
+			startPort, err := strconv.Atoi(l[0])
+			if err != nil {
+				return nil, fmt.Errorf("portsToPorts: %w", err)
+			}
+			if endPort < startPort {
+				return nil, fmt.Errorf("portsToPorts: %w", ErrNotSupportType)
+			}
+			pl = append(pl, fmt.Sprintf("%v:%v", startPort, endPort))
+		} else {
+			pl = append(pl, fmt.Sprintf("%v:%v", v, v))
+		}
+	}
+	return pl, nil
 }

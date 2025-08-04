@@ -31,3 +31,19 @@ func Test_portsToPort(t *testing.T) {
 	assert.Nil(t, err)
 
 }
+
+func Test_portsToPorts(t *testing.T) {
+	_, err := portsToPorts("443-43")
+	assert.Error(t, err)
+
+	port, _ := portsToPorts("443-500")
+	t.Log(port)
+
+	port, err = portsToPorts("443-500/200-300,100-120/123")
+	t.Log(port)
+	assert.Nil(t, err)
+
+	_, err = portsToPorts("100-100")
+	assert.Nil(t, err)
+
+}

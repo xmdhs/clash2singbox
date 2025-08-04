@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/xmdhs/clash2singbox/model"
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"github.com/xmdhs/clash2singbox/model/singbox"
 	"gopkg.in/yaml.v3"
 )
 
-func ss(p *clash.Proxies, s *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
+func ss(p *clash.Proxies, s *singbox.SingBoxOut, _ model.SingBoxVer) ([]singbox.SingBoxOut, error) {
 	s.Method = p.Cipher
 	if !p.Udp {
 		s.Network = "tcp"

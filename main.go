@@ -13,6 +13,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/httputils"
+	"github.com/xmdhs/clash2singbox/model"
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"gopkg.in/yaml.v3"
 )
@@ -68,7 +69,7 @@ func main() {
 		convert.ToInsecure(&c)
 	}
 
-	s, err := convert.Clash2sing(c)
+	s, err := convert.Clash2sing(c, model.SINGLATEST)
 	if err != nil {
 		fmt.Println(err)
 	}

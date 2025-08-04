@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/xmdhs/clash2singbox/model"
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"github.com/xmdhs/clash2singbox/model/singbox"
 )
 
-var convertMap = map[string]func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox.SingBoxOut, error){
+var convertMap = map[string]func(*clash.Proxies, *singbox.SingBoxOut, model.SingBoxVer) ([]singbox.SingBoxOut, error){
 	"vmess":       oldConver(vmess),
 	"vless":       oldConver(vless),
 	"shadowsocks": ss,
@@ -21,16 +22,17 @@ var convertMap = map[string]func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox
 	"hysteria2": hysteia2,
 	"wireguard": wireguard,
 	"tuic":      tuic,
+	"anytls":    anytls,
 }
 
-func oldConver(f func(*clash.Proxies, *singbox.SingBoxOut) error) func(*clash.Proxies, *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
-	return func(c *clash.Proxies, p *singbox.SingBoxOut) ([]singbox.SingBoxOut, error) {
+func oldConver(f func(*clash.Proxies, *singbox.SingBoxOut) error) func(*clash.Proxies, *singbox.SingBoxOut, model.SingBoxVer) ([]singbox.SingBoxOut, error) {
+	return func(c *clash.Proxies, p *singbox.SingBoxOut, _ model.SingBoxVer) ([]singbox.SingBoxOut, error) {
 		err := f(c, p)
 		return []singbox.SingBoxOut{*p}, err
 	}
 }
 
-func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
+func Clash2sing(c clash.Clash, ver model.SingBoxVer) ([]singbox.SingBoxOut, error) {
 	sl := make([]singbox.SingBoxOut, 0, len(c.Proxies)+1)
 	var jerr error
 	for _, v := range c.Proxies {
@@ -40,7 +42,7 @@ func Clash2sing(c clash.Clash) ([]singbox.SingBoxOut, error) {
 			jerr = errors.Join(jerr, err)
 			continue
 		}
-		nsl, err := convertMap[t](&v, s)
+		nsl, err := convertMap[t](&v, s, ver)
 		if err != nil {
 			jerr = errors.Join(jerr, err)
 			continue
@@ -76,6 +78,7 @@ var typeMap = map[string]string{
 	"hysteria2": "hysteria2",
 	"wireguard": "wireguard",
 	"tuic":      "tuic",
+	"anytls":    "anytls",
 }
 
 func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {

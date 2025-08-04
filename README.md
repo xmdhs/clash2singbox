@@ -4,6 +4,8 @@
 ## 网页版本
 https://github.com/xmdhs/clash2sfa
 
+**cli 版本不积极维护，推荐使用网页版本**
+
 ## 用法
 `./clash2singbox -i config.yaml` 或者 `./clash2singbox -url <订阅链接>` 。
 

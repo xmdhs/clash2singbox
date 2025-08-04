@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"net/netip"
 
+	"github.com/xmdhs/clash2singbox/model"
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"github.com/xmdhs/clash2singbox/model/singbox"
 	"golang.org/x/exp/constraints"
 )
 
-func wireguard(p *clash.Proxies, s *singbox.SingBoxOut) (o []singbox.SingBoxOut, err error) {
+func wireguard(p *clash.Proxies, s *singbox.SingBoxOut, _ model.SingBoxVer) (o []singbox.SingBoxOut, err error) {
 	s.LocalAddress = append(s.LocalAddress, p.IP, p.IPv6)
 	s.LocalAddress, err = addCidr(s.LocalAddress)
 	if err != nil {
