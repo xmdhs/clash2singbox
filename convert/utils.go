@@ -104,20 +104,44 @@ func PatchMap(
 	tags = append(tags, extags...)
 
 	ftags := tags
-	if include != "" {
-		ftags, err = filter(true, include, ftags)
-		if err != nil {
-			return nil, fmt.Errorf("PatchMap: %w", err)
-		}
-	}
 	if exclude != "" {
 		ftags, err = filter(false, exclude, ftags)
 		if err != nil {
 			return nil, fmt.Errorf("PatchMap: %w", err)
 		}
 	}
+	if include != "" {
+		ftags, err = filter(true, include, ftags)
+		if err != nil {
+			return nil, fmt.Errorf("PatchMap: %w", err)
+		}
+	}
 
-	anyList := make([]any, 0, len(s)+len(extOut)+5)
+	// 过滤 extOut 中的节点，只保留在 ftags 中的节点
+	filteredExtOut := make([]interface{}, 0, len(extOut))
+	for _, item := range extOut {
+		if m, ok := item.(map[string]any); ok {
+			if tag, exists := m["tag"].(string); exists {
+				// 检查这个标签是否在过滤后的标签列表中
+				found := false
+				for _, ftag := range ftags {
+					if ftag == tag {
+						found = true
+						break
+					}
+				}
+				if found {
+					filteredExtOut = append(filteredExtOut, item)
+				}
+			} else {
+				filteredExtOut = append(filteredExtOut, item)
+			}
+		} else {
+			filteredExtOut = append(filteredExtOut, item)
+		}
+	}
+
+	anyList := make([]any, 0, len(s)+len(filteredExtOut)+5)
 
 	if urltestOut {
 		anyList = append(anyList, singbox.SingBoxOut{
@@ -133,7 +157,7 @@ func PatchMap(
 		})
 	}
 
-	anyList = append(anyList, extOut...)
+	anyList = append(anyList, filteredExtOut...)
 	for _, v := range s {
 		anyList = append(anyList, v)
 	}

@@ -111,5 +111,13 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 	s.TcpFastOpen = p.Tfo
 	s.TcpMultiPath = p.Mptcp
 
+	// 处理 network 字段
+	if p.Network != "" {
+		s.Network = p.Network
+	} else {
+		// 默认情况下，如果没有指定 network，则支持 TCP 和 UDP
+		s.Network = "tcp,udp"
+	}
+
 	return s, s.Type, nil
 }
