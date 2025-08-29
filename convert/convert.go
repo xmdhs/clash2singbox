@@ -114,10 +114,8 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 	// 处理 network 字段
 	if p.Network != "" {
 		s.Network = p.Network
-	} else {
-		// 默认情况下，如果没有指定 network，则支持 TCP 和 UDP
-		s.Network = "tcp,udp"
 	}
+	// 默认 network 由具体的协议处理函数设置
 
 	return s, s.Type, nil
 }

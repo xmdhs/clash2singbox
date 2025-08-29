@@ -2,6 +2,12 @@ package singbox
 
 import "encoding/json"
 
+// FilterRule 定义过滤规则
+type FilterRule struct {
+	Action   string `json:"action"`   // "include" 或 "exclude"
+	Keywords string `json:"keywords"` // 关键词，支持正则表达式，用|分隔
+}
+
 type SingBoxOut struct {
 	Username                 string                    `json:"username,omitempty"`
 	Password                 string                    `json:"password,omitempty"`
@@ -21,7 +27,7 @@ type SingBoxOut struct {
 	Interval                 string                    `json:"interval,omitempty"`
 	Tolerance                int                       `json:"tolerance,omitempty"`
 	URL                      string                    `json:"url,omitempty"`
-	Network                  string                    `json:"network,omitempty"`
+	Network                  interface{}               `json:"network,omitempty"`
 	Plugin                   string                    `json:"plugin,omitempty"`
 	PluginOpts               string                    `json:"plugin_opts,omitempty"`
 	ObfsParam                string                    `json:"obfs_param,omitempty"`
@@ -62,6 +68,7 @@ type SingBoxOut struct {
 	IdleSessionCheckInterval string                    `json:"idle_session_check_interval,omitempty"`
 	IdleSessionTimeout       string                    `json:"idle_session_timeout,omitempty"`
 	MinIdleSession           int                       `json:"min_idle_session,omitempty"`
+	Filter                   []FilterRule              `json:"filter,omitempty"`
 }
 
 type SingUdpOverTcp struct {

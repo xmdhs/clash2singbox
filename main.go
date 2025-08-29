@@ -22,6 +22,7 @@ var (
 	url      string
 	path     string
 	outPath  string
+	template string
 	include  string
 	exclude  string
 	insecure bool
@@ -35,6 +36,7 @@ func init() {
 	flag.StringVar(&url, "url", "", "订阅地址，多个链接使用 | 分割")
 	flag.StringVar(&path, "i", "", "本地 clash 文件")
 	flag.StringVar(&outPath, "o", "config.json", "输出文件")
+	flag.StringVar(&template, "template", "config.json", "模板文件")
 	flag.StringVar(&include, "include", "", "urltest 选择的节点")
 	flag.StringVar(&exclude, "exclude", "", "urltest 排除的节点")
 	flag.BoolVar(&insecure, "insecure", false, "所有节点不验证证书")
@@ -73,7 +75,7 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	outb, err := os.ReadFile(outPath)
+	outb, err := os.ReadFile(template)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			outb = configByte

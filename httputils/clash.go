@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -124,7 +125,7 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 	// 订阅链接通常是 Base64 编码的，每行一个节点链接
 	content := strings.TrimSpace(string(config))
 	if content == "" {
-		return nil, nil, fmt.Errorf("getSing: %w", ErrJson)
+		return nil, nil, fmt.Errorf("getSing: 内容为空: %w", ErrJson)
 	}
 
 	// 尝试 Base64 解码
@@ -138,8 +139,9 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 	lines := strings.Split(strings.TrimSpace(string(decoded)), "\n")
 	outList := make([]map[string]any, 0)
 	tagsList := make([]string, 0)
+	var parseErrors []string
 
-	for _, line := range lines {
+	for i, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
@@ -148,6 +150,7 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 		// 解析节点链接并转换为 sing-box 格式
 		node, err := parseNodeLink(line)
 		if err != nil {
+			parseErrors = append(parseErrors, fmt.Sprintf("行 %d: %v", i+1, err))
 			continue // 跳过无法解析的节点
 		}
 
@@ -165,7 +168,11 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 	}
 
 	if len(outList) == 0 {
-		return nil, nil, fmt.Errorf("getSing: %w", ErrJson)
+		errorDetail := "没有成功解析的节点"
+		if len(parseErrors) > 0 {
+			errorDetail = fmt.Sprintf("解析错误: %s", strings.Join(parseErrors, "; "))
+		}
+		return nil, nil, fmt.Errorf("getSing: %s: %w", errorDetail, ErrJson)
 	}
 
 	return outList, tagsList, nil
@@ -212,17 +219,32 @@ func parseTrojanLink(u *url.URL) (map[string]any, error) {
 		"server":      host,
 		"server_port": parsePort(port),
 		"password":    password,
-		"network":     "tcp,udp",
+		"network":     []string{"tcp", "udp"}, // trojan协议支持TCP和UDP
 	}
 
 	// 解析查询参数
 	query := u.Query()
-	if sni := query.Get("sni"); sni != "" {
-		node["tls"] = map[string]any{
-			"enabled":     true,
-			"server_name": sni,
-		}
+
+	// 处理TLS配置
+	tls := map[string]any{
+		"enabled": true,
 	}
+
+	// 设置SNI
+	if sni := query.Get("sni"); sni != "" {
+		tls["server_name"] = sni
+	} else {
+		// 如果没有SNI，使用host作为server_name
+		tls["server_name"] = host
+	}
+
+	// 处理peer参数（可能用于TLS验证）
+	if peer := query.Get("peer"); peer != "" {
+		// peer参数通常用于指定证书验证的主机名
+		tls["server_name"] = peer
+	}
+
+	node["tls"] = tls
 
 	return node, nil
 }
@@ -245,7 +267,7 @@ func parseVlessLink(u *url.URL) (map[string]any, error) {
 		"server":      host,
 		"server_port": parsePort(port),
 		"uuid":        uuid,
-		"network":     "tcp,udp",
+		"network":     []string{"tcp", "udp"}, // vless协议支持TCP和UDP
 	}
 
 	// 解析查询参数
@@ -286,7 +308,7 @@ func parseShadowsocksLink(u *url.URL) (map[string]any, error) {
 		"server_port": parsePort(port),
 		"method":      method,
 		"password":    password,
-		"network":     "tcp,udp",
+		"network":     []string{"tcp", "udp"}, // shadowsocks协议支持TCP和UDP
 	}
 
 	return node, nil
@@ -310,9 +332,12 @@ func parsePort(portStr string) int {
 	if portStr == "" {
 		return 443 // 默认端口
 	}
-	// 这里应该添加更完善的端口解析逻辑
-	// 暂时使用简单转换
-	port := 443
-	fmt.Sscanf(portStr, "%d", &port)
-	return port
+
+	// 使用strconv.Atoi进行更可靠的转换
+	if port, err := strconv.Atoi(portStr); err == nil && port > 0 && port <= 65535 {
+		return port
+	}
+
+	// 如果转换失败，返回默认端口
+	return 443
 }
