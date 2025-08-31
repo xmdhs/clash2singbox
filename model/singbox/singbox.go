@@ -27,7 +27,7 @@ type SingBoxOut struct {
 	Interval                 string                    `json:"interval,omitempty"`
 	Tolerance                int                       `json:"tolerance,omitempty"`
 	URL                      string                    `json:"url,omitempty"`
-	Network                  interface{}               `json:"network,omitempty"`
+	Network                  string                    `json:"network,omitempty"`
 	Plugin                   string                    `json:"plugin,omitempty"`
 	PluginOpts               string                    `json:"plugin_opts,omitempty"`
 	ObfsParam                string                    `json:"obfs_param,omitempty"`

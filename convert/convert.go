@@ -111,11 +111,5 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 	s.TcpFastOpen = p.Tfo
 	s.TcpMultiPath = p.Mptcp
 
-	// 处理 network 字段
-	if p.Network != "" {
-		s.Network = p.Network
-	}
-	// 默认 network 由具体的协议处理函数设置
-
 	return s, s.Type, nil
 }

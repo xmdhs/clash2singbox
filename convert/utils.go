@@ -63,8 +63,8 @@ func getTags(s []singbox.SingBoxOut) []string {
 	})
 }
 
-func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []interface{}, extags ...string) ([]byte, error) {
-	d, err := PatchMap(b, s, include, exclude, extOut, extags, true, true)
+func Patch(b []byte, s []singbox.SingBoxOut, include, exclude string, extOut []any, extags ...string) ([]byte, error) {
+	d, err := patchMap(b, s, include, exclude, extOut, extags, true, true)
 	if err != nil {
 		return nil, fmt.Errorf("Patch: %w", err)
 	}
@@ -86,16 +86,16 @@ func ToInsecure(c *clash.Clash) {
 	}
 }
 
-func PatchMap(
+func patchMap(
 	tpl []byte,
 	s []singbox.SingBoxOut,
 	include, exclude string,
-	extOut []interface{},
+	extOut []any,
 	extags []string,
 	urltestOut bool,
 	outFields bool,
 ) (map[string]any, error) {
-	d := map[string]interface{}{}
+	d := map[string]any{}
 	err := json.Unmarshal(tpl, &d)
 	if err != nil {
 		return nil, fmt.Errorf("PatchMap: %w", err)
@@ -118,31 +118,7 @@ func PatchMap(
 		}
 	}
 
-	// 过滤 extOut 中的节点，只保留在 ftags 中的节点
-	filteredExtOut := make([]interface{}, 0, len(extOut))
-	for _, item := range extOut {
-		if m, ok := item.(map[string]any); ok {
-			if tag, exists := m["tag"].(string); exists {
-				// 检查这个标签是否在过滤后的标签列表中
-				found := false
-				for _, ftag := range ftags {
-					if ftag == tag {
-						found = true
-						break
-					}
-				}
-				if found {
-					filteredExtOut = append(filteredExtOut, item)
-				}
-			} else {
-				filteredExtOut = append(filteredExtOut, item)
-			}
-		} else {
-			filteredExtOut = append(filteredExtOut, item)
-		}
-	}
-
-	anyList := make([]any, 0, len(s)+len(filteredExtOut)+5)
+	anyList := make([]any, 0, len(s)+len(extOut)+5)
 
 	if urltestOut && len(ftags) > 0 {
 		anyList = append(anyList, singbox.SingBoxOut{
@@ -158,7 +134,7 @@ func PatchMap(
 		})
 	}
 
-	anyList = append(anyList, filteredExtOut...)
+	anyList = append(anyList, extOut...)
 	for _, v := range s {
 		anyList = append(anyList, v)
 	}
@@ -166,9 +142,9 @@ func PatchMap(
 	// 检查模板中是否已经存在这些特殊outbound，避免重复添加
 	templateTags := make(map[string]bool)
 	if outboundsRaw, exists := d["outbounds"]; exists {
-		if outboundsSlice, ok := outboundsRaw.([]interface{}); ok {
+		if outboundsSlice, ok := outboundsRaw.([]any); ok {
 			for _, outbound := range outboundsSlice {
-				if outboundMap, ok := outbound.(map[string]interface{}); ok {
+				if outboundMap, ok := outbound.(map[string]any); ok {
 					if tag, exists := outboundMap["tag"]; exists {
 						if tagStr, ok := tag.(string); ok {
 							templateTags[tagStr] = true
@@ -198,15 +174,15 @@ func PatchMap(
 	}
 
 	// 处理模板中的outbounds，先替换{all}占位符，然后应用filter并移除filter字段
-	var templateOutbounds []interface{}
+	var templateOutbounds []any
 	if outboundsRaw, exists := d["outbounds"]; exists {
-		if outboundsSlice, ok := outboundsRaw.([]interface{}); ok {
-			templateOutbounds = make([]interface{}, len(outboundsSlice))
+		if outboundsSlice, ok := outboundsRaw.([]any); ok {
+			templateOutbounds = make([]any, len(outboundsSlice))
 
 			// 第一步：收集所有 urltest 节点及其 filter 信息
 			urltestFilters := make(map[string][]string) // tag -> filtered tags
 			for _, outbound := range outboundsSlice {
-				if outboundMap, ok := outbound.(map[string]interface{}); ok {
+				if outboundMap, ok := outbound.(map[string]any); ok {
 					if outboundType, hasType := outboundMap["type"].(string); hasType && outboundType == "urltest" {
 						if tag, hasTag := outboundMap["tag"].(string); hasTag {
 							if _, hasFilter := outboundMap["filter"]; hasFilter {
@@ -220,14 +196,14 @@ func PatchMap(
 
 			// 第二步：处理所有 outbound
 			for i, outbound := range outboundsSlice {
-				outboundMap, ok := outbound.(map[string]interface{})
+				outboundMap, ok := outbound.(map[string]any)
 				if ok {
 					// 首先处理 {all} 占位符替换（无论是否有filter字段）
 					if outboundOutbounds, hasOutbounds := outboundMap["outbounds"]; hasOutbounds {
 						// 处理数组形式的outbounds
-						if outboundOutboundsSlice, ok := outboundOutbounds.([]interface{}); ok {
+						if outboundOutboundsSlice, ok := outboundOutbounds.([]any); ok {
 							needsReplacement := false
-							newOutbounds := make([]interface{}, 0, len(outboundOutboundsSlice))
+							newOutbounds := make([]any, 0, len(outboundOutboundsSlice))
 
 							// 先收集所有非{all}的现有项
 							for _, item := range outboundOutboundsSlice {
@@ -281,7 +257,7 @@ func PatchMap(
 							}
 
 							// 将字符串形式的{all}替换为标签数组
-							stringTags := make([]interface{}, len(tagsToUse))
+							stringTags := make([]any, len(tagsToUse))
 							for i, tag := range tagsToUse {
 								stringTags[i] = tag
 							}
@@ -303,10 +279,84 @@ func PatchMap(
 	return d, nil
 }
 
+func PatchMap(
+	tpl []byte,
+	s []singbox.SingBoxOut,
+	include, exclude string,
+	extOut []any,
+	extags []string,
+	urltestOut bool,
+	outFields bool,
+) (map[string]any, error) {
+	d := map[string]any{}
+	err := json.Unmarshal(tpl, &d)
+	if err != nil {
+		return nil, fmt.Errorf("PatchMap: %w", err)
+	}
+	tags := getTags(s)
+
+	tags = append(tags, extags...)
+
+	ftags := tags
+	if include != "" {
+		ftags, err = filter(true, include, ftags)
+		if err != nil {
+			return nil, fmt.Errorf("PatchMap: %w", err)
+		}
+	}
+	if exclude != "" {
+		ftags, err = filter(false, exclude, ftags)
+		if err != nil {
+			return nil, fmt.Errorf("PatchMap: %w", err)
+		}
+	}
+
+	anyList := make([]any, 0, len(s)+len(extOut)+5)
+
+	if urltestOut {
+		anyList = append(anyList, singbox.SingBoxOut{
+			Type:      "selector",
+			Tag:       "select",
+			Outbounds: append([]string{"urltest"}, tags...),
+			Default:   "urltest",
+		})
+		anyList = append(anyList, singbox.SingBoxOut{
+			Type:      "urltest",
+			Tag:       "urltest",
+			Outbounds: ftags,
+		})
+	}
+
+	anyList = append(anyList, extOut...)
+	for _, v := range s {
+		anyList = append(anyList, v)
+	}
+
+	anyList = append(anyList, singbox.SingBoxOut{
+		Type: "direct",
+		Tag:  "direct",
+	})
+
+	if outFields {
+		anyList = append(anyList, singbox.SingBoxOut{
+			Type: "block",
+			Tag:  "block",
+		})
+		anyList = append(anyList, singbox.SingBoxOut{
+			Type: "dns",
+			Tag:  "dns-out",
+		})
+	}
+
+	d["outbounds"] = anyList
+
+	return d, nil
+}
+
 // applyFilter 应用过滤规则到节点列表
-func applyFilter(outbound interface{}, allTags []string) []string {
-	// 将interface{}转换为map[string]interface{}进行处理
-	outboundMap, ok := outbound.(map[string]interface{})
+func applyFilter(outbound any, allTags []string) []string {
+	// 将any转换为map[string]any进行处理
+	outboundMap, ok := outbound.(map[string]any)
 	if !ok {
 		return allTags
 	}
@@ -318,7 +368,7 @@ func applyFilter(outbound interface{}, allTags []string) []string {
 	}
 
 	// 解析filter规则
-	filterRules, ok := filterRaw.([]interface{})
+	filterRules, ok := filterRaw.([]any)
 	if !ok {
 		return allTags
 	}
@@ -327,7 +377,7 @@ func applyFilter(outbound interface{}, allTags []string) []string {
 
 	// 应用每个filter规则
 	for _, ruleRaw := range filterRules {
-		ruleMap, ok := ruleRaw.(map[string]interface{})
+		ruleMap, ok := ruleRaw.(map[string]any)
 		if !ok {
 			continue
 		}
@@ -392,8 +442,8 @@ func applyFilter(outbound interface{}, allTags []string) []string {
 }
 
 // removeFilterField 从outbound配置中移除filter字段
-func removeFilterField(outbound interface{}) interface{} {
-	outboundMap, ok := outbound.(map[string]interface{})
+func removeFilterField(outbound any) any {
+	outboundMap, ok := outbound.(map[string]any)
 	if !ok {
 		return outbound
 	}

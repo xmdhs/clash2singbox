@@ -14,11 +14,6 @@ import (
 
 func ss(p *clash.Proxies, s *singbox.SingBoxOut, _ model.SingBoxVer) ([]singbox.SingBoxOut, error) {
 	s.Method = p.Cipher
-	if p.Udp {
-		s.Network = []string{"tcp", "udp"}
-	} else {
-		s.Network = "tcp"
-	}
 	if p.Obfs != "" {
 		s.Obfs = &singbox.SingObfs{
 			Value: p.Obfs,

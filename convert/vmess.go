@@ -165,14 +165,6 @@ func vmessHttpOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
 func trojan(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	p.Tls = true
 	tls(p, s)
-
-	// 处理 network 字段 - 根据 UDP 支持情况设置
-	if p.Udp {
-		s.Network = []string{"tcp", "udp"}
-	} else {
-		s.Network = "tcp"
-	}
-
 	if p.WsOpts.Path != "" || p.Network == "ws" {
 		err := vmessWsOpts(p, s)
 		if err != nil {

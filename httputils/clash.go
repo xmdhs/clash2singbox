@@ -39,12 +39,25 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 	l := sync.Mutex{}
 
 	for _, v := range urls {
-		v := v
 		u, err := url.Parse(v)
 		if err != nil {
 			return c, nil, nil, fmt.Errorf("GetAny: %w", err)
 		}
 		host := u.Host
+		if u.Scheme != "http" && u.Scheme != "https" {
+			node, err := parseNodeLink(v)
+			if err != nil {
+				return c, nil, nil, fmt.Errorf("GetAny: %w", err)
+			}
+			if tag, ok := node["tag"].(string); ok {
+				l.Lock()
+				singList = append(singList, node)
+				tags = append(tags, tag)
+				l.Unlock()
+			}
+			continue
+		}
+
 		g.Go(func() error {
 			b, err := HttpGet(ctx, hc, v, 1000*1000*10)
 			if err != nil {
