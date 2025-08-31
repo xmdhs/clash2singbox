@@ -14,7 +14,9 @@ func httpOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
 func socks5(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	tls(p, s)
 	p.Username = s.Username
-	if !p.Udp {
+	if p.Udp {
+		s.Network = []string{"tcp", "udp"}
+	} else {
 		s.Network = "tcp"
 	}
 	return nil
