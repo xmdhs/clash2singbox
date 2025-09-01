@@ -1,339 +1,348 @@
 {
-  "log": {
-    "disabled": false,
-    "level": "info",
-    "timestamp": true
-  },
-  "dns": {
-    "rules": [
-      {
-        "clash_mode": "Proxy",
-        "server": "remote"
-      },
-      {
-        "clash_mode": "Direct",
-        "server": "local"
-      },
-      {
+    "log": {
+        "disabled": false,
+        "level": "info",
+        "timestamp": true
+    },
+    "dns": {
+        "rules": [
+            {
+                "clash_mode": "Proxy",
+                "server": "remote"
+            },
+            {
+                "clash_mode": "Direct",
+                "server": "local"
+            },
+            {
+                "rule_set": [
+                    "geosite-cn"
+                ],
+                "server": "local"
+            },
+            {
+                "rule_set": "ext-cn-domain",
+                "server": "local"
+            }
+        ],
+        "servers": [
+            {
+                "type": "https",
+                "server": "1.1.1.1",
+                "detour": "Available",
+                "tag": "remote"
+            },
+            {
+                "type": "https",
+                "server": "223.5.5.5",
+                "tag": "local"
+            },
+            {
+                "type": "local"
+            }
+        ],
+        "strategy": "prefer_ipv4"
+    },
+    "experimental": {
+        "cache_file": {
+            "enabled": true
+        }
+    },
+    "inbounds": [
+        {
+            "listen": "127.0.0.1",
+            "listen_port": 2080,
+            "tag": "mixed-in",
+            "type": "mixed",
+            "users": []
+        },
+        {
+            "listen": "0.0.0.0",
+            "listen_port": 17271,
+            "tag": "http-in",
+            "type": "http",
+            "users": [
+                {
+                    "username": "proxyuser",
+                    "password": "proxy123"
+                }
+            ]
+        },
+        {
+            "listen": "0.0.0.0",
+            "listen_port": 1080,
+            "tag": "socks-in",
+            "type": "socks",
+            "users": [
+                {
+                    "username": "proxyuser",
+                    "password": "proxy123"
+                }
+            ]
+        }
+    ],
+    "outbounds": [
+        {
+            "type": "selector",
+            "tag": "Available",
+            "default": "🇸🇬 新加坡节点",
+            "outbounds": [
+                "🇸🇬 新加坡节点",
+                "🇹🇼 台湾节点",
+                "🇭🇰 香港节点",
+                "🇯🇵 日本节点",
+                "🇺🇸 美国节点",
+                "auto",
+                "direct"
+            ]
+        },
+        {
+            "tag": "auto",
+            "type": "urltest",
+            "outbounds": [
+                "{all}"
+            ],
+            "filter": [
+                {
+                    "action": "exclude",
+                    "keywords": "网站|地址|剩余|过期|时间|有效|速度"
+                }
+            ],
+            "url": "http://www.gstatic.com/generate_204",
+            "interval": "10m",
+            "tolerance": 50
+        },
+        {
+            "tag": "🤖 AI专用",
+            "type": "selector",
+            "default": "🇸🇬 新加坡节点",
+            "outbounds": [
+                "🇸🇬 新加坡节点",
+                "🇺🇸 美国节点",
+                "🇯🇵 日本节点"
+            ]
+        },
+        {
+            "tag": "🇹🇼 台湾节点",
+            "type": "selector",
+            "default": "🇹🇼 自动选择",
+            "outbounds": [
+                "🇹🇼 自动选择"
+            ]
+        },
+        {
+            "tag": "🇹🇼 自动选择",
+            "type": "urltest",
+            "outbounds": [
+                "{all}"
+            ],
+            "filter": [
+                {
+                    "action": "include",
+                    "keywords": "🇹🇼|TW|tw|台湾|台|Taiwan"
+                }
+            ],
+            "url": "http://www.gstatic.com/generate_204",
+            "interval": "5m",
+            "tolerance": 50
+        },
+        {
+            "tag": "🇭🇰 香港节点",
+            "type": "selector",
+            "default": "🇭🇰 自动选择",
+            "outbounds": [
+                "🇭🇰 自动选择"
+            ]
+        },
+        {
+            "tag": "🇭🇰 自动选择",
+            "type": "urltest",
+            "outbounds": [
+                "{all}"
+            ],
+            "filter": [
+                {
+                    "action": "include",
+                    "keywords": "🇭🇰|HK|hk|香港|港|HongKong"
+                }
+            ],
+            "url": "http://www.gstatic.com/generate_204",
+            "interval": "5m",
+            "tolerance": 50
+        },
+        {
+            "tag": "🇸🇬 新加坡节点",
+            "type": "selector",
+            "default": "🇸🇬 自动选择",
+            "outbounds": [
+                "🇸🇬 自动选择"
+            ]
+        },
+        {
+            "tag": "🇸🇬 自动选择",
+            "type": "urltest",
+            "outbounds": [
+                "{all}"
+            ],
+            "filter": [
+                {
+                    "action": "include",
+                    "keywords": "🇸🇬|SG|sg|新加坡|狮|Singapore"
+                }
+            ],
+            "url": "http://www.gstatic.com/generate_204",
+            "interval": "5m",
+            "tolerance": 50
+        },
+        {
+            "tag": "🇯🇵 日本节点",
+            "type": "selector",
+            "default": "🇯🇵 自动选择",
+            "outbounds": [
+                "🇯🇵 自动选择"
+            ]
+        },
+        {
+            "tag": "🇯🇵 自动选择",
+            "type": "urltest",
+            "outbounds": [
+                "{all}"
+            ],
+            "filter": [
+                {
+                    "action": "include",
+                    "keywords": "🇯🇵|JP|jp|日本|日|Japan"
+                }
+            ],
+            "url": "http://www.gstatic.com/generate_204",
+            "interval": "5m",
+            "tolerance": 50
+        },
+        {
+            "tag": "🇺🇸 美国节点",
+            "type": "selector",
+            "default": "🇺🇸 自动选择",
+            "outbounds": [
+                "🇺🇸 自动选择"
+            ]
+        },
+        {
+            "tag": "🇺🇸 自动选择",
+            "type": "urltest",
+            "outbounds": [
+                "{all}"
+            ],
+            "filter": [
+                {
+                    "action": "include",
+                    "keywords": "🇺🇸|US|us|美国|美|United States"
+                }
+            ],
+            "url": "http://www.gstatic.com/generate_204",
+            "interval": "5m",
+            "tolerance": 50
+        },
+        {
+            "type": "direct",
+            "tag": "direct"
+        }
+    ],
+    "route": {
+        "auto_detect_interface": true,
+        "default_domain_resolver": "local",
+        "rules": [
+            {
+                "action": "sniff"
+            },
+            {
+                "protocol": "dns",
+                "action": "hijack-dns"
+            },
+            {
+                "action": "resolve",
+                "strategy": "prefer_ipv4"
+            },
+            {
+                "clash_mode": "Direct",
+                "outbound": "direct"
+            },
+            {
+                "clash_mode": "Proxy",
+                "outbound": "Available"
+            },
+            {
+                "domain_keyword": [
+                    "smtp"
+                ],
+                "outbound": "direct"
+            },
+            {
+                "domain_suffix": [
+                    "githubusercontent.com"
+                ],
+                "outbound": "🇭🇰 香港节点"
+            },
+            {
+                "domain_suffix": [
+                    "openrouter.ai",
+                    "minimax.io",
+                    "ghcr.io",
+                    "docker.io",
+                    "cursor.sh",
+                    "cursor.com",
+                    "openai.com",
+                    "api.openai.com",
+                    "chat.openai.com",
+                    "anthropic.com",
+                    "claude.ai",
+                    "gemini.google.com",
+                    "generativelanguage.googleapis.com"
+                ],
+                "outbound": "🤖 AI专用"
+            },
+            {
+                "domain_suffix": [
+                    "github.com",
+                    "github.io",
+                    "githubassets.com",
+                    "githubapp.com"
+                ],
+                "outbound": "🤖 AI专用"
+            },
+            {
+                "rule_set": [
+                    "geosite-cn"
+                ],
+                "outbound": "direct"
+            },
+            {
+                "rule_set": "geoip-cn",
+                "outbound": "direct"
+            },
+            {
+                "ip_is_private": true,
+                "outbound": "direct"
+            }
+        ],
         "rule_set": [
-          "geosite-cn"
-        ],
-        "server": "local"
-      }
-    ],
-    "servers": [
-      {
-        "type": "https",
-        "server": "1.1.1.1",
-        "detour": "Available",
-        "tag": "remote"
-      },
-      {
-        "type": "https",
-        "server": "223.5.5.5",
-        "tag": "local"
-      },
-      {
-        "type": "local"
-      }
-    ],
-    "strategy": "prefer_ipv4"
-  },
-  "experimental": {
-    "cache_file": {
-      "enabled": true
+            {
+                "tag": "geosite-cn",
+                "type": "remote",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/xmdhs/sing-geosite/rule-set-Loyalsoldier/geosite-geolocation-cn.srs"
+            },
+            {
+                "tag": "geoip-cn",
+                "type": "remote",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs"
+            },
+            {
+                "tag": "ext-cn-domain",
+                "type": "remote",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/xmdhs/cn-domain-list/rule-set/ext-cn-list.srs"
+            }
+        ]
     }
-  },
-  "inbounds": [
-    {
-      "listen": "127.0.0.1",
-      "listen_port": 2080,
-      "tag": "mixed-in",
-      "type": "mixed",
-      "users": []
-    },
-    {
-      "listen": "0.0.0.0",
-      "listen_port": 17271,
-      "tag": "http-in",
-      "type": "http",
-      "users": [
-        {
-          "username": "proxyuser",
-          "password": "proxy123"
-        }
-      ]
-    },
-    {
-      "listen": "0.0.0.0",
-      "listen_port": 1080,
-      "tag": "socks-in",
-      "type": "socks",
-      "users": [
-        {
-          "username": "proxyuser",
-          "password": "proxy123"
-        }
-      ]
-    }
-  ],
-  "outbounds": [
-    {
-      "type": "selector",
-      "tag": "Available",
-      "default": "🇸🇬 新加坡节点",
-      "outbounds": [
-        "🇸🇬 新加坡节点",
-        "🇹🇼 台湾节点",
-        "🇭🇰 香港节点",
-        "🇯🇵 日本节点",
-        "🇺🇸 美国节点",
-        "auto",
-        "direct"
-      ]
-    },
-    {
-      "tag": "auto",
-      "type": "urltest",
-      "outbounds": [
-        "{all}"
-      ],
-      "filter": [
-        {
-          "action": "exclude",
-          "keywords": "网站|地址|剩余|过期|时间|有效|速度"
-        }
-      ],
-      "url": "http://www.gstatic.com/generate_204",
-      "interval": "10m",
-      "tolerance": 50
-    },
-    {
-      "tag": "🤖 AI专用",
-      "type": "selector",
-      "default": "🇸🇬 新加坡节点",
-      "outbounds": [
-        "🇸🇬 新加坡节点",
-        "🇺🇸 美国节点",
-        "🇯🇵 日本节点"
-      ]
-    },
-    {
-      "tag": "🇹🇼 台湾节点",
-      "type": "selector",
-      "default": "🇹🇼 自动选择",
-      "outbounds": [
-        "🇹🇼 自动选择"
-      ]
-    },
-    {
-      "tag": "🇹🇼 自动选择",
-      "type": "urltest",
-      "outbounds": [
-        "{all}"
-      ],
-      "filter": [
-        {
-          "action": "include",
-          "keywords": "🇹🇼|TW|tw|台湾|台|Taiwan"
-        }
-      ],
-      "url": "http://www.gstatic.com/generate_204",
-      "interval": "5m",
-      "tolerance": 50
-    },
-    {
-      "tag": "🇭🇰 香港节点",
-      "type": "selector",
-      "default": "🇭🇰 自动选择",
-      "outbounds": [
-        "🇭🇰 自动选择"
-      ]
-    },
-    {
-      "tag": "🇭🇰 自动选择",
-      "type": "urltest",
-      "outbounds": [
-        "{all}"
-      ],
-      "filter": [
-        {
-          "action": "include",
-          "keywords": "🇭🇰|HK|hk|香港|港|HongKong"
-        }
-      ],
-      "url": "http://www.gstatic.com/generate_204",
-      "interval": "5m",
-      "tolerance": 50
-    },
-    {
-      "tag": "🇸🇬 新加坡节点",
-      "type": "selector",
-      "default": "🇸🇬 自动选择",
-      "outbounds": [
-        "🇸🇬 自动选择"
-      ]
-    },
-    {
-      "tag": "🇸🇬 自动选择",
-      "type": "urltest",
-      "outbounds": [
-        "{all}"
-      ],
-      "filter": [
-        {
-          "action": "include",
-          "keywords": "🇸🇬|SG|sg|新加坡|狮|Singapore"
-        }
-      ],
-      "url": "http://www.gstatic.com/generate_204",
-      "interval": "5m",
-      "tolerance": 50
-    },
-    {
-      "tag": "🇯🇵 日本节点",
-      "type": "selector",
-      "default": "🇯🇵 自动选择",
-      "outbounds": [
-        "🇯🇵 自动选择"
-      ]
-    },
-    {
-      "tag": "🇯🇵 自动选择",
-      "type": "urltest",
-      "outbounds": [
-        "{all}"
-      ],
-      "filter": [
-        {
-          "action": "include",
-          "keywords": "🇯🇵|JP|jp|日本|日|Japan"
-        }
-      ],
-      "url": "http://www.gstatic.com/generate_204",
-      "interval": "5m",
-      "tolerance": 50
-    },
-    {
-      "tag": "🇺🇸 美国节点",
-      "type": "selector",
-      "default": "🇺🇸 自动选择",
-      "outbounds": [
-        "🇺🇸 自动选择"
-      ]
-    },
-    {
-      "tag": "🇺🇸 自动选择",
-      "type": "urltest",
-      "outbounds": [
-        "{all}"
-      ],
-      "filter": [
-        {
-          "action": "include",
-          "keywords": "🇺🇸|US|us|美国|美|United States"
-        }
-      ],
-      "url": "http://www.gstatic.com/generate_204",
-      "interval": "5m",
-      "tolerance": 50
-    },
-    {
-      "type": "direct",
-      "tag": "direct"
-    }
-  ],
-  "route": {
-    "auto_detect_interface": true,
-    "default_domain_resolver": "local",
-    "rules": [
-      {
-        "action": "sniff"
-      },
-      {
-        "protocol": "dns",
-        "action": "hijack-dns"
-      },
-      {
-        "clash_mode": "Direct",
-        "outbound": "direct"
-      },
-      {
-        "clash_mode": "Proxy",
-        "outbound": "Available"
-      },
-      {
-        "domain_suffix": [
-          "woa.com",
-          "oa.com",
-          "mrlin.cc"
-        ],
-        "outbound": "direct"
-      },
-      {
-        "domain_keyword": [
-          "smtp"
-        ],
-        "outbound": "direct"
-      },
-      {
-        "domain_suffix": [
-          "onepiece-0423.openai.azure.com"
-        ],
-        "outbound": "direct"
-      },
-      {
-        "domain_suffix": [
-          "githubusercontent.com"
-        ],
-        "outbound": "🇭🇰 香港节点"
-      },
-      {
-        "domain_suffix": [
-          "openrouter.ai",
-          "minimax.io",
-          "ghcr.io",
-          "docker.io",
-          "cursor.sh",
-          "cursor.com",
-          "openai.com",
-          "api.openai.com",
-          "chat.openai.com",
-          "anthropic.com",
-          "claude.ai",
-          "gemini.google.com",
-          "generativelanguage.googleapis.com"
-        ],
-        "outbound": "🤖 AI专用"
-      },
-      {
-        "domain_suffix": [
-          "github.com",
-          "github.io",
-          "githubassets.com",
-          "githubapp.com"
-        ],
-        "outbound": "🤖 AI专用"
-      },
-      {
-        "rule_set": [
-          "geosite-cn"
-        ],
-        "outbound": "direct"
-      },
-      {
-        "ip_is_private": true,
-        "outbound": "direct"
-      }
-    ],
-    "rule_set": [
-      {
-        "tag": "geosite-cn",
-        "type": "remote",
-        "format": "binary",
-        "url": "https://fastly.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-cn.srs",
-        "download_detour": "direct"
-      }
-    ]
-  }
 }
