@@ -177,6 +177,11 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 			tagsList = append(tagsList, tag)
 		}
 	}
+
+	if len(outList) == 0 {
+		return nil, nil, fmt.Errorf("getSing: %w", ErrJson)
+	}
+
 	return outList, tagsList, nil
 }
 
