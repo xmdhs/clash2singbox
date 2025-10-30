@@ -152,9 +152,8 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 	lines := strings.Split(strings.TrimSpace(string(decoded)), "\n")
 	outList := make([]map[string]any, 0)
 	tagsList := make([]string, 0)
-	var parseErrors []string
 
-	for i, line := range lines {
+	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
@@ -163,7 +162,6 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 		// 解析节点链接并转换为 sing-box 格式
 		node, err := parseNodeLink(line)
 		if err != nil {
-			parseErrors = append(parseErrors, fmt.Sprintf("行 %d: %v", i+1, err))
 			continue // 跳过无法解析的节点
 		}
 
@@ -179,15 +177,6 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 			tagsList = append(tagsList, tag)
 		}
 	}
-
-	if len(outList) == 0 {
-		errorDetail := "没有成功解析的节点"
-		if len(parseErrors) > 0 {
-			errorDetail = fmt.Sprintf("解析错误: %s", strings.Join(parseErrors, "; "))
-		}
-		return nil, nil, fmt.Errorf("getSing: %s: %w", errorDetail, ErrJson)
-	}
-
 	return outList, tagsList, nil
 }
 
