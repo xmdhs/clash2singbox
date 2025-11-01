@@ -138,7 +138,7 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 	// 订阅链接通常是 Base64 编码的，每行一个节点链接
 	content := strings.TrimSpace(string(config))
 	if content == "" {
-		return nil, nil, fmt.Errorf("getSing: 内容为空: %w", ErrJson)
+		return nil, nil, fmt.Errorf("getSing: 内容为空: %w host: %v", ErrJson, host)
 	}
 
 	// 尝试 Base64 解码
@@ -179,7 +179,7 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 	}
 
 	if len(outList) == 0 {
-		return nil, nil, fmt.Errorf("getSing: %w", ErrJson)
+		return nil, nil, fmt.Errorf("getSing: %w host: %v", ErrJson, host)
 	}
 
 	return outList, tagsList, nil
