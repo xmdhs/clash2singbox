@@ -66,11 +66,7 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 			lc := clash.Clash{}
 			err = yaml.Unmarshal(b, &lc)
 			if err != nil || len(lc.Proxies) == 0 {
-				h := ""
-				if addTag {
-					h = host
-				}
-				s, t, err := getSing(b, h)
+				s, t, err := getSing(b, host, addTag)
 				if err != nil {
 					return err
 				}
@@ -106,7 +102,7 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 
 var ErrJson = errors.New("错误的格式")
 
-func getSing(config []byte, host string) ([]map[string]any, []string, error) {
+func getSing(config []byte, host string, addTag bool) ([]map[string]any, []string, error) {
 	// 首先尝试解析为 JSON 格式的 sing-box 配置
 	if gjson.Valid(string(config)) {
 		out := gjson.GetBytes(config, "outbounds").Array()
@@ -121,7 +117,7 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 			m, ok := v.Value().(map[string]any)
 			if ok {
 				tag := v.Get("tag").String()
-				if host != "" {
+				if addTag {
 					tag = fmt.Sprintf("%s[%s]", tag, host)
 					m["tag"] = tag
 				}
@@ -166,7 +162,7 @@ func getSing(config []byte, host string) ([]map[string]any, []string, error) {
 		}
 
 		// 添加主机标签
-		if host != "" {
+		if addTag {
 			if tag, ok := node["tag"].(string); ok {
 				node["tag"] = fmt.Sprintf("%s[%s]", tag, host)
 			}
