@@ -130,7 +130,7 @@ func parseHysteria2(u *url.URL) (clash.Proxies, error) {
 		Type:     "hysteria2",
 		Server:   u.Hostname(),
 		Port:     u.Port(),
-		Password: u.User.String(),
+		Password: u.User.Username(),
 	}
 	q := u.Query()
 	if scv, ok := q["insecure"]; ok && len(scv) > 0 && scv[0] == "1" {
@@ -222,7 +222,7 @@ func parseTrojan(u *url.URL) (clash.Proxies, error) {
 		Port:   u.Port(),
 	}
 	if u.User != nil {
-		p.Username = u.User.Username()
+		p.Password = u.User.Username()
 	}
 
 	q := u.Query()
