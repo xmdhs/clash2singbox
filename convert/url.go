@@ -427,16 +427,15 @@ func parseSs(u *url.URL) (clash.Proxies, error) {
 		Port:   u.Port(),
 		Name:   u.Fragment,
 	}
-
+	password, ok := u.User.Password()
 	decodedUserInfo, err := base64.RawURLEncoding.DecodeString(u.User.Username())
-	if err == nil {
+	if err == nil && !ok {
 		parts := strings.SplitN(string(decodedUserInfo), ":", 2)
 		if len(parts) == 2 {
 			p.Cipher = parts[0]
 			p.Password = parts[1]
 		}
 	} else {
-		password, ok := u.User.Password()
 		if ok {
 			p.Password = password
 			p.Cipher = u.User.Username()
