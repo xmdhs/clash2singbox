@@ -37,6 +37,8 @@ func ParseURL(s string) (clash.Proxies, error) {
 		p, err = parseSocks5(u)
 	case "http", "https":
 		p, err = parseHttp(u)
+	case "anytls":
+		p, err = parseAnytls(u)
 	default:
 		return clash.Proxies{}, fmt.Errorf("unsupported protocol: %s", u.Scheme)
 	}
@@ -494,6 +496,23 @@ func parseSs(u *url.URL) (clash.Proxies, error) {
 
 	if tfo, ok := q["tfo"]; ok && len(tfo) > 0 && (tfo[0] == "1" || tfo[0] == "true") {
 		p.Tfo = true
+	}
+	return p, nil
+}
+
+func parseAnytls(u *url.URL) (clash.Proxies, error) {
+	p := clash.Proxies{
+		Name:   u.Fragment,
+		Type:   "anytls",
+		Server: u.Hostname(),
+		Port:   u.Port(),
+	}
+	p.Password = u.User.Username()
+	q := u.Query()
+
+	p.Servername = q.Get("sni")
+	if v := q.Get("insecure"); v == "1" {
+		p.SkipCertVerify = true
 	}
 	return p, nil
 }
