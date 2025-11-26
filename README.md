@@ -19,7 +19,6 @@ https://github.com/xmdhs/clash2sfa
 
 ## 支持协议
 - shadowsocks （仅包含 v2ray-plugin, obfs 和 shadow-tls 插件）
-- shadowsocksR
 - vmess
 - vless (含 reality)
 - trojan
@@ -27,4 +26,5 @@ https://github.com/xmdhs/clash2sfa
 - http
 - hysteria
 - hysteria2
-- tuic5
+- tuic
+- anytls
