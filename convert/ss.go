@@ -24,7 +24,10 @@ func ss(p *clash.Proxies, s *singbox.SingBoxOut, _ model.SingBoxVer) ([]singbox.
 	s.ObfsParam = p.ObfsParam
 
 	if p.UdpOverTcp {
-		s.UdpOverTcp = &singbox.SingUdpOverTcp{Enabled: true}
+		s.UdpOverTcp = &singbox.SingUdpOverTcp{Enabled: true, Version: 1}
+		if p.UdpOverTcpVersion != 0 {
+			s.UdpOverTcp.Version = int(p.UdpOverTcpVersion)
+		}
 	}
 
 	if p.Plugin != "" {

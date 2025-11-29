@@ -57,6 +57,7 @@ type Proxies struct {
 	Ports                    string            `yaml:"ports"`
 	Smux                     smuxOpts          `yaml:"smux"`
 	UdpOverTcp               MyBool            `yaml:"udp-over-tcp"`
+	UdpOverTcpVersion        MyInt             `yaml:"udp-over-tcp-version"`
 	IP                       string            `yaml:"ip"`
 	IPv6                     string            `yaml:"ipv6"`
 	PublicKey                string            `yaml:"public-key"`

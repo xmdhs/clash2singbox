@@ -73,6 +73,7 @@ type SingBoxOut struct {
 
 type SingUdpOverTcp struct {
 	Enabled bool `json:"enabled,omitempty"`
+	Version int  `json:"version,omitempty"`
 }
 
 type SingTLS struct {
