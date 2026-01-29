@@ -94,6 +94,7 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 		return nil, "", fmt.Errorf("comm: %w", err)
 	}
 	s.ServerPort = port
+	s.Username = p.Username
 	s.Password = p.Password
 
 	if p.Smux.Enabled {
