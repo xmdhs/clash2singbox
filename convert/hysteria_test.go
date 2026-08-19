@@ -27,12 +27,12 @@ func Test_portsToPorts(t *testing.T) {
 
 func TestHysteriaSinglePort(t *testing.T) {
 	p := &clash.Proxies{
-		Type: "hysteria",
-		Name: "hy",
+		Type:   "hysteria",
+		Name:   "hy",
 		Server: "example.com",
-		Port: "443",
-		Up: "10",
-		Down: "20",
+		Port:   "443",
+		Up:     "10",
+		Down:   "20",
 	}
 	s, _, err := comm(p)
 	assert.NoError(t, err)
@@ -44,13 +44,13 @@ func TestHysteriaSinglePort(t *testing.T) {
 
 func TestHysteriaServerPortsAndHopInterval(t *testing.T) {
 	p := &clash.Proxies{
-		Type: "hysteria",
-		Name: "hy",
-		Server: "example.com",
-		Port: "443",
-		Ports: "500-505,600",
-		Up: "10",
-		Down: "20",
+		Type:        "hysteria",
+		Name:        "hy",
+		Server:      "example.com",
+		Port:        "443",
+		Ports:       "500-505,600",
+		Up:          "10",
+		Down:        "20",
 		HopInterval: 15,
 	}
 	s, _, err := comm(p)
@@ -64,23 +64,45 @@ func TestHysteriaServerPortsAndHopInterval(t *testing.T) {
 
 func TestHysteria2ServerPortsAndHopInterval(t *testing.T) {
 	p := &clash.Proxies{
-		Type: "hysteria2",
-		Name: "hy2",
-		Server: "example.com",
-		Port: "443",
-		Ports: "700-701",
-		Up: "10",
-		Down: "20",
+		Type:        "hysteria2",
+		Name:        "hy2",
+		Server:      "example.com",
+		Port:        "443",
+		Ports:       "700-701",
+		Up:          "10",
+		Down:        "20",
 		HopInterval: 30,
 	}
 	s, _, err := comm(p)
 	assert.NoError(t, err)
-	out, err := hysteia2(p, s, model.SING110)
+	// server_ports / hop_interval 自 sing-box 1.11.0 起支持
+	out, err := hysteia2(p, s, model.SINGLATEST)
 	assert.NoError(t, err)
 	assert.Len(t, out, 1)
 	assert.Equal(t, 0, out[0].ServerPort)
 	assert.Equal(t, []string{"700:701"}, out[0].ServerPorts)
 	assert.Equal(t, "30s", out[0].HopInterval)
+}
+
+func TestHysteria2SinglePortBelow111(t *testing.T) {
+	p := &clash.Proxies{
+		Type:   "hysteria2",
+		Name:   "hy2",
+		Server: "example.com",
+		Port:   "443",
+		Ports:  "700-701",
+		Up:     "10",
+		Down:   "20",
+	}
+	s, _, err := comm(p)
+	assert.NoError(t, err)
+	// sing-box < 1.11.0 不支持 server_ports，退化为随机单端口
+	out, err := hysteia2(p, s, model.SING110)
+	assert.NoError(t, err)
+	assert.Len(t, out, 1)
+	assert.Equal(t, []string(nil), out[0].ServerPorts)
+	assert.GreaterOrEqual(t, out[0].ServerPort, 700)
+	assert.LessOrEqual(t, out[0].ServerPort, 701)
 }
 
 func TestParseTuicURL(t *testing.T) {
@@ -125,12 +147,12 @@ func TestClash2singWireguardEndpoint(t *testing.T) {
 
 func TestAnytlsDisablesTCPFastOpen(t *testing.T) {
 	p := &clash.Proxies{
-		Type: "anytls",
-		Name: "a",
-		Server: "example.com",
-		Port: "443",
+		Type:     "anytls",
+		Name:     "a",
+		Server:   "example.com",
+		Port:     "443",
 		Password: "pass",
-		Tfo: true,
+		Tfo:      true,
 	}
 	s, _, err := comm(p)
 	assert.NoError(t, err)
@@ -141,11 +163,11 @@ func TestAnytlsDisablesTCPFastOpen(t *testing.T) {
 
 func TestVmessHTTPTransportDetection(t *testing.T) {
 	p := &clash.Proxies{
-		Type: "vmess",
-		Name: "v",
-		Server: "example.com",
-		Port: "443",
-		Uuid: "uuid",
+		Type:    "vmess",
+		Name:    "v",
+		Server:  "example.com",
+		Port:    "443",
+		Uuid:    "uuid",
 		Network: "http",
 	}
 	assert.NoError(t, yaml.Unmarshal([]byte("http-opts:\n  path: [/test]\n"), p))
@@ -160,14 +182,14 @@ func TestVmessHTTPTransportDetection(t *testing.T) {
 
 func TestVmessFields(t *testing.T) {
 	p := &clash.Proxies{
-		Type: "vmess",
-		Name: "v",
-		Server: "example.com",
-		Port: "443",
-		Uuid: "uuid",
-		GlobalPadding: true,
+		Type:                "vmess",
+		Name:                "v",
+		Server:              "example.com",
+		Port:                "443",
+		Uuid:                "uuid",
+		GlobalPadding:       true,
 		AuthenticatedLength: true,
-		PacketEncoding: "packetaddr",
+		PacketEncoding:      "packetaddr",
 	}
 	s, _, err := comm(p)
 	assert.NoError(t, err)
@@ -180,11 +202,11 @@ func TestVmessFields(t *testing.T) {
 
 func TestVlessPacketEncodingCompatibility(t *testing.T) {
 	p := &clash.Proxies{
-		Type: "vless",
-		Name: "v",
-		Server: "example.com",
-		Port: "443",
-		Uuid: "uuid",
+		Type:            "vless",
+		Name:            "v",
+		Server:          "example.com",
+		Port:            "443",
+		Uuid:            "uuid",
 		PacketEncoding1: "xudp",
 	}
 	s, _, err := comm(p)

@@ -49,40 +49,25 @@ func vmess(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	s.AuthenticatedLength = bool(p.AuthenticatedLength)
 	s.PacketEncoding = packetEncodingValue(p)
 	if p.WsOpts.Path != "" || p.Network == "ws" {
-		err := vmessWsOpts(p, s)
-		if err != nil {
-			return fmt.Errorf("vmess: %w", err)
-		}
+		vmessWsOpts(p, s)
 		return nil
 	}
 	if p.GrpcOpts.GrpcServiceName != "" {
-		err := vmessGrpcOpts(p, s)
-		if err != nil {
-			return fmt.Errorf("vmess: %w", err)
-		}
+		vmessGrpcOpts(p, s)
 		return nil
 	}
 	if p.H2Opts.Path != "" || p.Network == "h2" {
-		err := vmessHttp2Opts(p, s)
-		if err != nil {
-			return fmt.Errorf("vmess: %w", err)
-		}
+		vmessHttp2Opts(p, s)
 		return nil
 	}
 	if p.Network == "http" || len(p.HTTPOpts.Path) > 0 || len(p.HTTPOpts.Headers) > 0 || p.HTTPOpts.Method != "" {
-		err := vmessHttpOpts(p, s)
-		if err != nil {
-			return fmt.Errorf("vmess: %w", err)
-		}
+		vmessHttpOpts(p, s)
 	}
 	return nil
 }
 
 func vless(p *clash.Proxies, s *singbox.SingBoxOut) error {
-	err := vmess(p, s)
-	if err != nil {
-		return fmt.Errorf("vless: %w", err)
-	}
+	vmess(p, s)
 	s.Security = ""
 	s.GlobalPadding = false
 	s.AuthenticatedLength = false
@@ -96,7 +81,7 @@ func vless(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	return nil
 }
 
-func vmessWsOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
+func vmessWsOpts(p *clash.Proxies, s *singbox.SingBoxOut) {
 	t := "ws"
 	if p.WsOpts.V2rayHttpUpgrade {
 		t = "httpupgrade"
@@ -127,29 +112,26 @@ func vmessWsOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	s.Transport.Path = p.WsOpts.Path
 	s.Transport.EarlyDataHeaderName = p.WsOpts.EarlyDataHeaderName
 	s.Transport.MaxEarlyData = int(p.WsOpts.MaxEarlyData)
-	return nil
 }
 
-func vmessGrpcOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
+func vmessGrpcOpts(p *clash.Proxies, s *singbox.SingBoxOut) {
 	if s.Transport == nil {
 		s.Transport = &singbox.SingTransport{}
 	}
 	s.Transport.Type = "grpc"
 	s.Transport.ServiceName = p.GrpcOpts.GrpcServiceName
-	return nil
 }
 
-func vmessHttp2Opts(p *clash.Proxies, s *singbox.SingBoxOut) error {
+func vmessHttp2Opts(p *clash.Proxies, s *singbox.SingBoxOut) {
 	if s.Transport == nil {
 		s.Transport = &singbox.SingTransport{}
 	}
 	s.Transport.Type = "http"
 	s.Transport.Host = p.H2Opts.Host
 	s.Transport.Path = p.H2Opts.Path
-	return nil
 }
 
-func vmessHttpOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
+func vmessHttpOpts(p *clash.Proxies, s *singbox.SingBoxOut) {
 	if s.Transport == nil {
 		s.Transport = &singbox.SingTransport{}
 	}
@@ -162,7 +144,6 @@ func vmessHttpOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	}
 	s.Transport.Method = p.HTTPOpts.Method
 	s.Transport.Headers = p.HTTPOpts.Headers
-	return nil
 }
 
 func packetEncodingValue(p *clash.Proxies) string {
@@ -185,16 +166,10 @@ func trojan(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	p.Tls = true
 	tls(p, s)
 	if p.WsOpts.Path != "" || p.Network == "ws" {
-		err := vmessWsOpts(p, s)
-		if err != nil {
-			return fmt.Errorf("trojan: %w", err)
-		}
+		vmessWsOpts(p, s)
 	}
 	if p.GrpcOpts.GrpcServiceName != "" {
-		err := vmessGrpcOpts(p, s)
-		if err != nil {
-			return fmt.Errorf("trojan: %w", err)
-		}
+		vmessGrpcOpts(p, s)
 	}
 	return nil
 }

@@ -77,8 +77,10 @@ func hysteia2(p *clash.Proxies, s *singbox.SingBoxOut, v model.SingBoxVer) ([]si
 	tls(p, s)
 
 	if p.Ports != "" {
-		if v >= model.SING112 {
+		// sing-box 1.11.0 起支持 hysteria2 的 server_ports / hop_interval
+		if v >= model.SING111 {
 			var err error
+			s.ServerPort = 0
 			s.ServerPorts, err = portsToPorts(p.Ports)
 			if err != nil {
 				return nil, fmt.Errorf("hysteia2: %w", err)
@@ -144,10 +146,8 @@ func anyToMbps(s string) (int, error) {
 	if m[3] == "B" {
 		n = n * 8.0
 	}
-	v, err := strconv.Atoi(m[1])
-	if err != nil {
-		return 0, fmt.Errorf("anyToMbps: %w", ErrNotSupportType)
-	}
+	// 正则已保证 m[1] 为纯数字，Atoi 不会失败
+	v, _ := strconv.Atoi(m[1])
 	mb := int(float64(v) * n)
 	if mb == 0 {
 		mb = 1

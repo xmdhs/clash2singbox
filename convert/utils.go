@@ -71,10 +71,8 @@ func Patch(b []byte, s []singbox.SingBoxOut, eps []*singbox.SingBoxEndpoint, inc
 	bw := &bytes.Buffer{}
 	jw := json.NewEncoder(bw)
 	jw.SetIndent("", "    ")
-	err = jw.Encode(d)
-	if err != nil {
-		return nil, fmt.Errorf("Patch: %w", err)
-	}
+	// d 来自 json.Unmarshal，序列化不会失败
+	_ = jw.Encode(d)
 	return bw.Bytes(), nil
 }
 

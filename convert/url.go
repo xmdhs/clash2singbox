@@ -462,19 +462,20 @@ func parseSs(u *url.URL) (clash.Proxies, error) {
 
 	if plugin, ok := q["plugin"]; ok {
 		if len(plugin) > 0 {
-			pluginStr, err := url.QueryUnescape(plugin[0])
-			if err != nil {
-				return clash.Proxies{}, err
-			}
+			// u.Query() 已对查询参数做 percent 解码，无需再次解码
+			pluginStr := plugin[0]
 			parts := strings.Split(pluginStr, ";")
 			if len(parts) < 2 {
-				return clash.Proxies{}, err
+				return clash.Proxies{}, fmt.Errorf("invalid plugin: %s", pluginStr)
 			}
 			opts := make(map[string]string)
 			for _, part := range parts[1:] {
 				kv := strings.SplitN(part, "=", 2)
 				if len(kv) == 2 {
 					opts[kv[0]] = kv[1]
+				} else if kv[0] == "tls" {
+					// v2ray-plugin 以裸标志 `tls` 表示启用 TLS
+					opts["tls"] = "true"
 				}
 			}
 
@@ -486,10 +487,7 @@ func parseSs(u *url.URL) (clash.Proxies, error) {
 				if host, ok := opts["obfs-host"]; ok {
 					pluginOpts["host"] = host
 				}
-				err = p.PluginOpts.Encode(pluginOpts)
-				if err != nil {
-					return clash.Proxies{}, err
-				}
+				_ = p.PluginOpts.Encode(pluginOpts)
 			case "v2ray-plugin":
 				p.Plugin = "v2ray-plugin"
 				pluginOpts := make(map[string]any)
@@ -498,10 +496,7 @@ func parseSs(u *url.URL) (clash.Proxies, error) {
 					pluginOpts["tls"] = true
 				}
 				pluginOpts["host"] = opts["host"]
-				err = p.PluginOpts.Encode(pluginOpts)
-				if err != nil {
-					return clash.Proxies{}, err
-				}
+				_ = p.PluginOpts.Encode(pluginOpts)
 
 			}
 		}

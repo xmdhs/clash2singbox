@@ -83,6 +83,7 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 					lc.Proxies = append(lc.Proxies, list...)
 				} else {
 					lc.Proxies = append(lc.Proxies, tc.Proxies...)
+					lc.ProxyGroup = append(lc.ProxyGroup, tc.ProxyGroup...)
 				}
 			}
 			if addTag {
@@ -99,6 +100,7 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 			}
 			l.Lock()
 			c.Proxies = append(c.Proxies, lc.Proxies...)
+			c.ProxyGroup = append(c.ProxyGroup, lc.ProxyGroup...)
 			l.Unlock()
 			return nil
 		})

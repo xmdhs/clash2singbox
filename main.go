@@ -41,16 +41,23 @@ func init() {
 	flag.StringVar(&exclude, "exclude", "", "urltest 排除的节点")
 	flag.BoolVar(&insecure, "insecure", false, "所有节点不验证证书")
 	flag.BoolVar(&ignore, "ignore", true, "忽略无法转换的节点")
-	flag.Parse()
+	// 注意：不在此处 flag.Parse()，否则与 go test 的 flag 冲突
 }
 
 func main() {
+	flag.Parse()
+	run(url, path, outPath, template, include, exclude, insecure)
+}
+
+var httpClient = &http.Client{Timeout: 10 * time.Second}
+
+func run(url, path, outPath, template, include, exclude string, insecure bool) {
 	c := clash.Clash{}
 	var singList []map[string]any
 	var tags []string
 	if url != "" {
 		var err error
-		c, singList, tags, err = httputils.GetAny(context.TODO(), &http.Client{Timeout: 10 * time.Second}, url, false)
+		c, singList, tags, err = httputils.GetAny(context.TODO(), httpClient, url, false)
 		if err != nil {
 			panic(err)
 		}
