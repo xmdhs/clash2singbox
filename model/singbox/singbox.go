@@ -64,6 +64,11 @@ type SingBoxOut struct {
 	MinIdleSession           int                       `json:"min_idle_session,omitempty"`
 	Filter                   []FilterRule              `json:"filter,omitempty"`
 	Realm                    *SingRealm                `json:"realm,omitempty"`
+	Psk                      string                    `json:"psk,omitempty"`
+	Reuse                    bool                      `json:"reuse,omitempty"`
+	ObfsMode                 string                    `json:"obfs_mode,omitempty"`
+	ObfsHost                 string                    `json:"obfs_host,omitempty"`
+	Mode                     string                    `json:"mode,omitempty"`
 }
 
 type SingUdpOverTcp struct {

@@ -81,10 +81,19 @@ type Proxies struct {
 	ObfsPassword             string `yaml:"obfs-password"`
 	Tfo                      bool   `yaml:"tfo"`
 	Mptcp                    bool   `yaml:"mptcp"`
-	IdleSessionCheckInterval MyInt  `yaml:"idle-session-check-interval"`
-	IdleSessionTimeout       MyInt  `yaml:"idle-session-timeout"`
-	MinIdleSession           MyInt    `yaml:"min-idle-session"`
-	RealmOpts                RealmOpts `yaml:"realm-opts"`
+	IdleSessionCheckInterval MyInt         `yaml:"idle-session-check-interval"`
+	IdleSessionTimeout       MyInt         `yaml:"idle-session-timeout"`
+	MinIdleSession           MyInt         `yaml:"min-idle-session"`
+	RealmOpts                RealmOpts      `yaml:"realm-opts"`
+	Psk                      string         `yaml:"psk"`
+	Version                  MyInt         `yaml:"version"`
+	Reuse                    MyBool        `yaml:"reuse"`
+	ObfsOpts                 *snellObfsOpts `yaml:"obfs-opts"`
+}
+
+type snellObfsOpts struct {
+	Mode string `yaml:"mode"`
+	Host string `yaml:"host"`
 }
 
 type smuxOpts struct {

@@ -22,6 +22,7 @@ var convertMap = map[string]func(*clash.Proxies, *singbox.SingBoxOut, model.Sing
 	"hysteria2": hysteia2,
 	"tuic":      tuic,
 	"anytls":    anytls,
+	"snell":     snell,
 }
 
 func oldConver(f func(*clash.Proxies, *singbox.SingBoxOut) error) func(*clash.Proxies, *singbox.SingBoxOut, model.SingBoxVer) ([]singbox.SingBoxOut, error) {
@@ -95,6 +96,7 @@ var typeMap = map[string]string{
 	"wireguard": "wireguard",
 	"tuic":      "tuic",
 	"anytls":    "anytls",
+	"snell":     "snell",
 }
 
 func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
