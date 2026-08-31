@@ -668,6 +668,198 @@ obfs-password: obfs-pass
 	assert.Nil(t, out[0].Obfs)
 }
 
+// --- Hysteria2 Realm ---
+
+func TestHysteria2RealmEnabled(t *testing.T) {
+	p := proxyFromYAML(t, `
+name: hy2
+type: hysteria2
+server: server.com
+port: "443"
+password: pass
+up: "30 Mbps"
+down: "200 Mbps"
+sni: server.com
+realm-opts:
+  enable: true
+  server-url: https://realm.hy2.io
+  token: public
+  realm-id: my-cabin-1f3a8c2e9b
+  stun-servers:
+    - stun.nextcloud.com:3478
+    - stun.sip.us:3478
+`)
+	s, _, err := comm(&p)
+	require.NoError(t, err)
+	out, err := hysteia2(&p, s, model.SINGLATEST)
+	require.NoError(t, err)
+	require.Len(t, out, 1)
+	require.NotNil(t, out[0].Realm)
+	assert.Equal(t, "https://realm.hy2.io", out[0].Realm.ServerUrl)
+	assert.Equal(t, "public", out[0].Realm.Token)
+	assert.Equal(t, "my-cabin-1f3a8c2e9b", out[0].Realm.RealmId)
+	assert.Equal(t, []string{"stun.nextcloud.com:3478", "stun.sip.us:3478"}, out[0].Realm.StunServers)
+	// 与 realm 互斥的字段必须被清空
+	assert.Equal(t, "", out[0].Server)
+	assert.Equal(t, 0, out[0].ServerPort)
+	assert.Empty(t, out[0].ServerPorts)
+	assert.Equal(t, "", out[0].HopInterval)
+	// 其他字段仍正常映射
+	assert.Equal(t, "pass", out[0].Password)
+	assert.Equal(t, 30, out[0].UpMbps)
+	assert.Equal(t, 200, out[0].DownMbps)
+	require.NotNil(t, out[0].TLS)
+
+	b, err := json.Marshal(out[0])
+	require.NoError(t, err)
+	jsonStr := string(b)
+	assert.Contains(t, jsonStr, `"realm"`)
+	assert.Contains(t, jsonStr, `"server_url":"https://realm.hy2.io"`)
+	assert.Contains(t, jsonStr, `"realm_id":"my-cabin-1f3a8c2e9b"`)
+	assert.NotContains(t, jsonStr, `"server":`)
+	assert.NotContains(t, jsonStr, `"server_port":`)
+}
+
+func TestHysteria2RealmWithoutToken(t *testing.T) {
+	p := proxyFromYAML(t, `
+name: hy2
+type: hysteria2
+server: example.com
+port: "443"
+password: pass
+realm-opts:
+  enable: true
+  server-url: https://realm.hy2.io
+  realm-id: rid-123
+  stun-servers:
+    - stun.example.com:3478
+`)
+	s, _, err := comm(&p)
+	require.NoError(t, err)
+	out, err := hysteia2(&p, s, model.SINGLATEST)
+	require.NoError(t, err)
+	require.NotNil(t, out[0].Realm)
+	assert.Equal(t, "", out[0].Realm.Token)
+	b, err := json.Marshal(out[0])
+	require.NoError(t, err)
+	assert.NotContains(t, string(b), `"token"`)
+}
+
+func TestHysteria2RealmDisabledKeepsServer(t *testing.T) {
+	p := proxyFromYAML(t, `
+name: hy2
+type: hysteria2
+server: server.com
+port: "443"
+password: pass
+realm-opts:
+  enable: false
+  server-url: https://realm.hy2.io
+  token: public
+  realm-id: rid
+  stun-servers:
+    - stun.example.com:3478
+`)
+	s, _, err := comm(&p)
+	require.NoError(t, err)
+	out, err := hysteia2(&p, s, model.SINGLATEST)
+	require.NoError(t, err)
+	assert.Nil(t, out[0].Realm)
+	assert.Equal(t, "server.com", out[0].Server)
+	assert.Equal(t, 443, out[0].ServerPort)
+}
+
+func TestHysteria2RealmEmptyServerURLNotTriggered(t *testing.T) {
+	p := proxyFromYAML(t, `
+name: hy2
+type: hysteria2
+server: server.com
+port: "443"
+password: pass
+realm-opts:
+  enable: true
+  realm-id: rid
+  stun-servers:
+    - stun.example.com:3478
+`)
+	s, _, err := comm(&p)
+	require.NoError(t, err)
+	out, err := hysteia2(&p, s, model.SINGLATEST)
+	require.NoError(t, err)
+	assert.Nil(t, out[0].Realm)
+	assert.Equal(t, "server.com", out[0].Server)
+}
+
+func TestHysteria2RealmIgnoresPortsAndHopInterval(t *testing.T) {
+	p := proxyFromYAML(t, `
+name: hy2
+type: hysteria2
+server: server.com
+port: "443"
+ports: 443-8443
+hop-interval: 30
+password: pass
+realm-opts:
+  enable: true
+  server-url: https://realm.hy2.io
+  token: t
+  realm-id: rid
+  stun-servers:
+    - stun.example.com:3478
+`)
+	s, _, err := comm(&p)
+	require.NoError(t, err)
+	out, err := hysteia2(&p, s, model.SINGLATEST)
+	require.NoError(t, err)
+	assert.Empty(t, out[0].ServerPorts)
+	assert.Equal(t, "", out[0].HopInterval)
+	assert.Equal(t, 0, out[0].ServerPort)
+	require.NotNil(t, out[0].Realm)
+}
+
+func TestHysteria2RealmViaClash2sing(t *testing.T) {
+	c := clash.Clash{}
+	require.NoError(t, yaml.Unmarshal([]byte(`
+proxies:
+  - name: hy2-realm
+    type: hysteria2
+    server: server.com
+    port: "443"
+    password: pass
+    realm-opts:
+      enable: true
+      server-url: https://realm.hy2.io
+      token: public
+      realm-id: rid
+      stun-servers: ["stun.example.com:3478"]
+  - name: hy2-direct
+    type: hysteria2
+    server: direct.com
+    port: "443"
+    password: pass
+`), &c))
+	out, _, err := Clash2sing(c, model.SINGLATEST)
+	require.NoError(t, err)
+	require.Len(t, out, 2)
+	// 顺序与输入一致，realm 节点在前
+	var realmOut, directOut *struct {
+		Tag   string
+		Realm interface{}
+	}
+	_ = realmOut
+	_ = directOut
+	for i := range out {
+		if out[i].Tag == "hy2-realm" {
+			require.NotNil(t, out[i].Realm)
+			assert.Equal(t, "", out[i].Server)
+		}
+		if out[i].Tag == "hy2-direct" {
+			assert.Nil(t, out[i].Realm)
+			assert.Equal(t, "direct.com", out[i].Server)
+		}
+	}
+}
+
 // --- TUIC ---
 
 func TestTuicBasic(t *testing.T) {

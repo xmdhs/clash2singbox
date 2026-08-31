@@ -87,3 +87,72 @@ func TestWgReservedInvalidValue(t *testing.T) {
 	err := yaml.Unmarshal([]byte("r: {a: b}\n"), &h)
 	assert.Error(t, err)
 }
+
+// --- RealmOpts ---
+
+func TestProxiesRealmOptsParsed(t *testing.T) {
+	var p Proxies
+	require.NoError(t, yaml.Unmarshal([]byte(`
+name: hy2
+type: hysteria2
+server: server.com
+port: "443"
+realm-opts:
+  enable: true
+  server-url: https://realm.hy2.io
+  token: public
+  realm-id: my-cabin-1f3a8c2e9b
+  stun-servers:
+    - stun.nextcloud.com:3478
+    - stun.sip.us:3478
+`), &p))
+	assert.Equal(t, MyBool(true), p.RealmOpts.Enable)
+	assert.Equal(t, "https://realm.hy2.io", p.RealmOpts.ServerUrl)
+	assert.Equal(t, "public", p.RealmOpts.Token)
+	assert.Equal(t, "my-cabin-1f3a8c2e9b", p.RealmOpts.RealmId)
+	assert.Equal(t, []string{"stun.nextcloud.com:3478", "stun.sip.us:3478"}, p.RealmOpts.StunServers)
+}
+
+func TestProxiesRealmOptsEnableInt(t *testing.T) {
+	var p Proxies
+	require.NoError(t, yaml.Unmarshal([]byte(`
+name: hy2
+type: hysteria2
+server: server.com
+port: "443"
+realm-opts:
+  enable: 1
+  server-url: https://realm.hy2.io
+  realm-id: rid
+  stun-servers: ["stun.example.com:3478"]
+`), &p))
+	assert.Equal(t, MyBool(true), p.RealmOpts.Enable)
+
+	var p2 Proxies
+	require.NoError(t, yaml.Unmarshal([]byte(`
+name: hy2
+type: hysteria2
+server: server.com
+port: "443"
+realm-opts:
+  enable: 0
+  server-url: https://realm.hy2.io
+  realm-id: rid
+  stun-servers: ["stun.example.com:3478"]
+`), &p2))
+	assert.Equal(t, MyBool(false), p2.RealmOpts.Enable)
+}
+
+func TestProxiesRealmOptsEmpty(t *testing.T) {
+	var p Proxies
+	require.NoError(t, yaml.Unmarshal([]byte(`
+name: hy2
+type: hysteria2
+server: server.com
+port: "443"
+password: pass
+`), &p))
+	assert.Equal(t, MyBool(false), p.RealmOpts.Enable)
+	assert.Equal(t, "", p.RealmOpts.ServerUrl)
+	assert.Nil(t, p.RealmOpts.StunServers)
+}

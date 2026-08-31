@@ -76,21 +76,39 @@ func hysteia2(p *clash.Proxies, s *singbox.SingBoxOut, v model.SingBoxVer) ([]si
 	p.Tls = true
 	tls(p, s)
 
-	if p.Ports != "" {
-		// sing-box 1.11.0 起支持 hysteria2 的 server_ports / hop_interval
-		if v >= model.SING111 {
-			var err error
-			s.ServerPort = 0
-			s.ServerPorts, err = portsToPorts(p.Ports)
-			if err != nil {
-				return nil, fmt.Errorf("hysteia2: %w", err)
+	isRealm := bool(p.RealmOpts.Enable) && p.RealmOpts.ServerUrl != ""
+	if isRealm {
+		// realm 与 server / server_port / server_ports 互斥
+		s.Server = ""
+		s.ServerPort = 0
+		s.ServerPorts = nil
+		s.HopInterval = ""
+		s.Realm = &singbox.SingRealm{
+			ServerUrl:   p.RealmOpts.ServerUrl,
+			Token:       p.RealmOpts.Token,
+			RealmId:     p.RealmOpts.RealmId,
+			StunServers: p.RealmOpts.StunServers,
+		}
+	} else {
+		if p.Ports != "" {
+			// sing-box 1.11.0 起支持 hysteria2 的 server_ports / hop_interval
+			if v >= model.SING111 {
+				var err error
+				s.ServerPort = 0
+				s.ServerPorts, err = portsToPorts(p.Ports)
+				if err != nil {
+					return nil, fmt.Errorf("hysteia2: %w", err)
+				}
+			} else {
+				port, err := portsToPort(p.Ports)
+				if err != nil {
+					return nil, fmt.Errorf("hysteia2: %w", err)
+				}
+				s.ServerPort = port
 			}
-		} else {
-			port, err := portsToPort(p.Ports)
-			if err != nil {
-				return nil, fmt.Errorf("hysteia2: %w", err)
-			}
-			s.ServerPort = port
+		}
+		if p.HopInterval != 0 {
+			s.HopInterval = fmt.Sprintf("%vs", p.HopInterval)
 		}
 	}
 
@@ -104,9 +122,6 @@ func hysteia2(p *clash.Proxies, s *singbox.SingBoxOut, v model.SingBoxVer) ([]si
 		return nil, fmt.Errorf("hysteia2: %w", err)
 	}
 	s.Password = p.Password
-	if p.HopInterval != 0 {
-		s.HopInterval = fmt.Sprintf("%vs", p.HopInterval)
-	}
 	if p.ObfsPassword != "" && p.Obfs != "" {
 		s.Obfs = &singbox.SingObfs{
 			Type:  p.Obfs,

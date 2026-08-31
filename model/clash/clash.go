@@ -83,7 +83,8 @@ type Proxies struct {
 	Mptcp                    bool   `yaml:"mptcp"`
 	IdleSessionCheckInterval MyInt  `yaml:"idle-session-check-interval"`
 	IdleSessionTimeout       MyInt  `yaml:"idle-session-timeout"`
-	MinIdleSession           MyInt  `yaml:"min-idle-session"`
+	MinIdleSession           MyInt    `yaml:"min-idle-session"`
+	RealmOpts                RealmOpts `yaml:"realm-opts"`
 }
 
 type smuxOpts struct {
@@ -121,6 +122,14 @@ type wsOpts struct {
 type realityOpts struct {
 	PublicKey string `yaml:"public-key"`
 	ShortId   string `yaml:"short-id"`
+}
+
+type RealmOpts struct {
+	Enable      MyBool   `yaml:"enable"`
+	ServerUrl   string   `yaml:"server-url"`
+	Token       string   `yaml:"token"`
+	RealmId     string   `yaml:"realm-id"`
+	StunServers []string `yaml:"stun-servers"`
 }
 
 type ProxyGroup struct {

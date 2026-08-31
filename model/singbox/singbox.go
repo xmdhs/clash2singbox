@@ -63,6 +63,7 @@ type SingBoxOut struct {
 	IdleSessionTimeout       string                    `json:"idle_session_timeout,omitempty"`
 	MinIdleSession           int                       `json:"min_idle_session,omitempty"`
 	Filter                   []FilterRule              `json:"filter,omitempty"`
+	Realm                    *SingRealm                `json:"realm,omitempty"`
 }
 
 type SingUdpOverTcp struct {
@@ -90,6 +91,13 @@ type SingReality struct {
 	Enabled   bool   `json:"enabled,omitempty"`
 	PublicKey string `json:"public_key,omitempty"`
 	ShortID   string `json:"short_id,omitempty"`
+}
+
+type SingRealm struct {
+	ServerUrl   string   `json:"server_url"`
+	Token       string   `json:"token,omitempty"`
+	RealmId     string   `json:"realm_id"`
+	StunServers []string `json:"stun_servers"`
 }
 
 type SingTransport struct {
