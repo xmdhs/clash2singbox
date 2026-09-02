@@ -63,6 +63,22 @@ func getTags(s []singbox.SingBoxOut) []string {
 	})
 }
 
+func getEndpointTags(eps []*singbox.SingBoxEndpoint) []string {
+	return getForList(eps, func(v *singbox.SingBoxEndpoint) (string, bool) {
+		if v == nil || v.Tag == "" {
+			return "", false
+		}
+		return v.Tag, true
+	})
+}
+
+func buildTags(s []singbox.SingBoxOut, eps []*singbox.SingBoxEndpoint, extags []string) []string {
+	tags := getTags(s)
+	tags = append(tags, getEndpointTags(eps)...)
+	tags = append(tags, extags...)
+	return tags
+}
+
 func Patch(b []byte, s []singbox.SingBoxOut, eps []*singbox.SingBoxEndpoint, include, exclude string, extOut []any, extags ...string) ([]byte, error) {
 	d, err := patchMap(b, s, eps, include, exclude, extOut, extags, true, true)
 	if err != nil {
@@ -99,9 +115,7 @@ func patchMap(
 	if err != nil {
 		return nil, fmt.Errorf("PatchMap: %w", err)
 	}
-	tags := getTags(s)
-
-	tags = append(tags, extags...)
+	tags := buildTags(s, eps, extags)
 
 	ftags := tags
 	if exclude != "" {
@@ -307,9 +321,7 @@ func PatchMap(
 	if err != nil {
 		return nil, fmt.Errorf("PatchMap: %w", err)
 	}
-	tags := getTags(s)
-
-	tags = append(tags, extags...)
+	tags := buildTags(s, eps, extags)
 
 	ftags := tags
 	if include != "" {
