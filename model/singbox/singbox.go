@@ -133,6 +133,33 @@ type SingBoxEndpoint struct {
 	Peers      []*SingWireguardMultiPeer `json:"peers,omitempty"`
 	MTU        uint32                    `json:"mtu,omitempty"`
 	Detour     string                    `json:"detour,omitempty"`
+	// OpenVPN client endpoint fields (type: openvpn-client)
+	Server              string            `json:"server,omitempty"`
+	ServerPort          int               `json:"server_port,omitempty"`
+	Network             string            `json:"network,omitempty"`
+	Username            string            `json:"username,omitempty"`
+	Password            string            `json:"password,omitempty"`
+	Mode                string            `json:"mode,omitempty"`
+	DataCiphers         []string          `json:"data_ciphers,omitempty"`
+	DataCiphersFallback string            `json:"data_ciphers_fallback,omitempty"`
+	Auth                string            `json:"auth,omitempty"`
+	CompressionLZO      string            `json:"compression_lzo,omitempty"`
+	PingInterval        string            `json:"ping_interval,omitempty"`
+	PingRestart         string            `json:"ping_restart,omitempty"`
+	TLS                 *SingOpenVPNTLS   `json:"tls,omitempty"`
+}
+
+type SingOpenVPNTLS struct {
+	Certificate       []string                `json:"certificate,omitempty"`
+	ClientCertificate []string                `json:"client_certificate,omitempty"`
+	ClientKey         []string                `json:"client_key,omitempty"`
+	ControlWrap       *SingOpenVPNControlWrap `json:"control_wrap,omitempty"`
+}
+
+type SingOpenVPNControlWrap struct {
+	Type      string   `json:"type,omitempty"`
+	Key       []string `json:"key,omitempty"`
+	Direction string   `json:"direction,omitempty"`
 }
 
 type SingWireguardMultiPeer struct {

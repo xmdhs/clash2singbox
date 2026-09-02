@@ -89,6 +89,26 @@ type Proxies struct {
 	Version                  MyInt         `yaml:"version"`
 	Reuse                    MyBool        `yaml:"reuse"`
 	ObfsOpts                 *snellObfsOpts `yaml:"obfs-opts"`
+	Proto                    string            `yaml:"proto"`
+	Dev                      string            `yaml:"dev"`
+	DataCiphers              []string          `yaml:"data-ciphers"`
+	DataCipherFallback       string            `yaml:"data-ciphers-fallback"`
+	Auth                     string            `yaml:"auth"`
+	CompLZO                  string            `yaml:"comp-lzo"`
+	CA                       string            `yaml:"ca"`
+	Cert                     string            `yaml:"cert"`
+	Key                      string            `yaml:"key"`
+	TLSAuth                  string            `yaml:"tls-auth"`
+	KeyDirection             string            `yaml:"key-direction"`
+	TLSCrypt                 string            `yaml:"tls-crypt"`
+	TLSCryptV2               string            `yaml:"tls-crypt-v2"`
+	PeerInfo                 map[string]string `yaml:"peer-info"`
+	Ping                     MyInt             `yaml:"ping"`
+	PingRestart              MyInt             `yaml:"ping-restart"`
+	TranWindow               *int              `yaml:"tran-window"`
+	HandshakeTimeout         MyInt             `yaml:"handshake-timeout"`
+	RemoteDnsResolve         MyBool            `yaml:"remote-dns-resolve"`
+	Dns                      []string          `yaml:"dns"`
 }
 
 type snellObfsOpts struct {

@@ -54,6 +54,16 @@ func Clash2sing(c clash.Clash, ver model.SingBoxVer) ([]singbox.SingBoxOut, []*s
 			continue
 		}
 
+		if t == "openvpn-client" {
+			ep, err := openvpnEndpoint(&v)
+			if err != nil {
+				jerr = errors.Join(jerr, err)
+				continue
+			}
+			eps = append(eps, ep)
+			continue
+		}
+
 		s, _, err := comm(&v)
 		if err != nil {
 			jerr = errors.Join(jerr, err)
@@ -94,6 +104,7 @@ var typeMap = map[string]string{
 	"hysteria":  "hysteria",
 	"hysteria2": "hysteria2",
 	"wireguard": "wireguard",
+	"openvpn":   "openvpn-client",
 	"tuic":      "tuic",
 	"anytls":    "anytls",
 	"snell":     "snell",
