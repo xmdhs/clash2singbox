@@ -321,6 +321,25 @@ func PatchMap(
 	if err != nil {
 		return nil, fmt.Errorf("PatchMap: %w", err)
 	}
+	return PatchMapFromMap(d, s, eps, include, exclude, extOut, extags, urltestOut, outFields)
+}
+
+// PatchMapFromMap patches a configuration that has already been decoded by
+// the caller. The map belongs to the current conversion and may be mutated.
+func PatchMapFromMap(
+	d map[string]any,
+	s []singbox.SingBoxOut,
+	eps []*singbox.SingBoxEndpoint,
+	include, exclude string,
+	extOut []any,
+	extags []string,
+	urltestOut bool,
+	outFields bool,
+) (map[string]any, error) {
+	if d == nil {
+		return nil, fmt.Errorf("PatchMap: 配置必须是 JSON 对象")
+	}
+	var err error
 	tags := buildTags(s, eps, extags)
 
 	ftags := tags
