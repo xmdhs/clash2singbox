@@ -79,10 +79,10 @@ func openvpnEndpoint(p *clash.Proxies) (*singbox.SingBoxEndpoint, error) {
 		ep.CompressionLZO = v
 	}
 	if int(p.Ping) > 0 {
-		ep.PingInterval = fmt.Sprintf("%ds", int(p.Ping))
+		ep.PingInterval = strconv.Itoa(int(p.Ping)) + "s"
 	}
 	if int(p.PingRestart) > 0 {
-		ep.PingRestart = fmt.Sprintf("%ds", int(p.PingRestart))
+		ep.PingRestart = strconv.Itoa(int(p.PingRestart)) + "s"
 	}
 
 	// TLS: CA is always required, client cert/key optional

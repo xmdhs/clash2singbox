@@ -67,7 +67,7 @@ func hysteria(p *clash.Proxies, s *singbox.SingBoxOut) error {
 	}
 	s.DisableMtuDiscovery = bool(p.DisableMtuDiscovery)
 	if p.HopInterval != 0 {
-		s.HopInterval = fmt.Sprintf("%vs", p.HopInterval)
+		s.HopInterval = strconv.Itoa(int(p.HopInterval)) + "s"
 	}
 	return nil
 }
@@ -108,7 +108,7 @@ func hysteia2(p *clash.Proxies, s *singbox.SingBoxOut, v model.SingBoxVer) ([]si
 			}
 		}
 		if p.HopInterval != 0 {
-			s.HopInterval = fmt.Sprintf("%vs", p.HopInterval)
+			s.HopInterval = strconv.Itoa(int(p.HopInterval)) + "s"
 		}
 	}
 
@@ -216,9 +216,9 @@ func portsToPorts(ports string) ([]string, error) {
 			if endPort < startPort {
 				return nil, fmt.Errorf("portsToPorts: %w", ErrNotSupportType)
 			}
-			pl = append(pl, fmt.Sprintf("%v:%v", startPort, endPort))
+			pl = append(pl, strconv.Itoa(startPort)+":"+strconv.Itoa(endPort))
 		} else {
-			pl = append(pl, fmt.Sprintf("%v:%v", v, v))
+			pl = append(pl, v+":"+v)
 		}
 	}
 	return pl, nil

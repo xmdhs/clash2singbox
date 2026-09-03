@@ -12,6 +12,19 @@ import (
 )
 
 func filter(isinclude bool, reg string, sl []string) ([]string, error) {
+	// 纯字面模式走 strings.Contains 快路径，省掉 Compile + RE2 执行。无跨请求状态。
+	if isLiteralPattern(reg) {
+		return getForList(sl, func(v string) (string, bool) {
+			has := strings.Contains(v, reg)
+			if has && isinclude {
+				return v, true
+			}
+			if !isinclude && !has {
+				return v, true
+			}
+			return "", false
+		}), nil
+	}
 	r, err := regexp.Compile(reg)
 	if err != nil {
 		return sl, fmt.Errorf("filter: %w", err)
@@ -26,6 +39,20 @@ func filter(isinclude bool, reg string, sl []string) ([]string, error) {
 		}
 		return "", false
 	}), nil
+}
+
+// isLiteralPattern 报告模式是否不含正则元字符。
+func isLiteralPattern(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '.', '+', '*', '?', '(', ')', '|', '[', ']', '{', '}', '^', '$', '\\':
+			return false
+		}
+	}
+	return true
 }
 
 func getForList[K, V any](l []K, check func(K) (V, bool)) []V {
@@ -359,10 +386,13 @@ func PatchMapFromMap(
 	anyList := make([]any, 0, len(s)+len(extOut)+5)
 
 	if urltestOut {
+		selOutbounds := make([]string, 0, len(tags)+1)
+		selOutbounds = append(selOutbounds, "urltest")
+		selOutbounds = append(selOutbounds, tags...)
 		anyList = append(anyList, singbox.SingBoxOut{
 			Type:      "selector",
 			Tag:       "select",
-			Outbounds: append([]string{"urltest"}, tags...),
+			Outbounds: selOutbounds,
 			Default:   "urltest",
 		})
 		anyList = append(anyList, singbox.SingBoxOut{

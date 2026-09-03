@@ -1,7 +1,7 @@
 package convert
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/xmdhs/clash2singbox/model"
 	"github.com/xmdhs/clash2singbox/model/clash"
@@ -17,7 +17,7 @@ func tuic(p *clash.Proxies, s *singbox.SingBoxOut, _ model.SingBoxVer) ([]singbo
 	s.UdpOverStream = bool(p.UdpOverStream)
 	s.ZeroRttHandshake = bool(p.ReduceRtt)
 	if p.HeartbeatInterval != 0 {
-		s.Heartbeat = fmt.Sprintf("%vms", p.HeartbeatInterval)
+		s.Heartbeat = strconv.Itoa(int(p.HeartbeatInterval)) + "ms"
 	}
 	if p.IP != "" {
 		s.Server = p.IP

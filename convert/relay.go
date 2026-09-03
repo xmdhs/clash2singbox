@@ -1,8 +1,6 @@
 package convert
 
 import (
-	"fmt"
-
 	"github.com/xmdhs/clash2singbox/model/singbox"
 )
 
@@ -22,7 +20,7 @@ func relay(slm map[string]singbox.SingBoxOut, pl []string, name string) []singbo
 		if i != 0 {
 			s1.Ignored = true
 		}
-		s1.Tag = fmt.Sprintf("%v-%v-%v", s1.Tag, "relay", name)
+		s1.Tag = s1.Tag + "-relay-" + name
 		s0 = s1
 		sl = append(sl, s1)
 	}

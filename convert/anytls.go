@@ -1,7 +1,7 @@
 package convert
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/xmdhs/clash2singbox/model"
 	"github.com/xmdhs/clash2singbox/model/clash"
@@ -14,10 +14,10 @@ func anytls(p *clash.Proxies, s *singbox.SingBoxOut, v model.SingBoxVer) ([]sing
 	s.TcpFastOpen = false
 
 	if p.IdleSessionCheckInterval != 0 {
-		s.IdleSessionCheckInterval = fmt.Sprintf("%vs", p.IdleSessionCheckInterval)
+		s.IdleSessionCheckInterval = strconv.Itoa(int(p.IdleSessionCheckInterval)) + "s"
 	}
 	if p.IdleSessionTimeout != 0 {
-		s.IdleSessionTimeout = fmt.Sprintf("%vs", p.IdleSessionTimeout)
+		s.IdleSessionTimeout = strconv.Itoa(int(p.IdleSessionTimeout)) + "s"
 	}
 	if p.MinIdleSession != 0 {
 		s.MinIdleSession = int(p.MinIdleSession)

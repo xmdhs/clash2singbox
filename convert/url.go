@@ -17,7 +17,18 @@ func ParseURL(s string) (clash.Proxies, error) {
 	if err != nil {
 		return clash.Proxies{}, err
 	}
+	return parseURLFromURL(u, s)
+}
+
+// ParseURLFromURL 复用已解析的 *url.URL，避免调用方与 ParseURL 双重 url.Parse。
+// raw 仅用于 vmess 分支（需原始串做 TrimPrefix+base64）与错误信息。
+func ParseURLFromURL(u *url.URL, raw string) (clash.Proxies, error) {
+	return parseURLFromURL(u, strings.TrimSpace(raw))
+}
+
+func parseURLFromURL(u *url.URL, s string) (clash.Proxies, error) {
 	var p clash.Proxies
+	var err error
 	switch u.Scheme {
 	case "ss":
 		p, err = parseSs(u)
