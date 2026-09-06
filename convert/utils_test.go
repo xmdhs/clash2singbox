@@ -10,19 +10,28 @@ import (
 	"github.com/xmdhs/clash2singbox/model/singbox"
 )
 
-func TestFilterIncludeExclude(t *testing.T) {
+// patchTemplate 以命令行版本（Patch）的选项对模板 tpl 打补丁，返回补丁后的模板。
+func patchTemplate(t *testing.T, tpl string, s []singbox.SingBoxOut, eps []*singbox.SingBoxEndpoint, include, exclude string, extOut []any, extags []string) (map[string]any, error) {
+	t.Helper()
+	var d map[string]any
+	require.NoError(t, json.Unmarshal([]byte(tpl), &d))
+	err := patch(d, s, eps, extOut, extags, patchOptions{include: include, exclude: exclude, urltest: true, keepTemplate: true})
+	return d, err
+}
+
+func TestFilterByRegexp(t *testing.T) {
 	tags := []string{"HK-01", "HK-02", "JP-01", "SG-01"}
-	inc, err := filter(true, "HK", tags)
+	inc, err := filterByRegexp(tags, "HK", true)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"HK-01", "HK-02"}, inc)
 
-	exc, err := filter(false, "HK", tags)
+	exc, err := filterByRegexp(tags, "HK", false)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"JP-01", "SG-01"}, exc)
 }
 
-func TestFilterInvalidRegex(t *testing.T) {
-	_, err := filter(true, "[", []string{"a"})
+func TestFilterByRegexpInvalid(t *testing.T) {
+	_, err := filterByRegexp([]string{"a"}, "[", true)
 	assert.Error(t, err)
 }
 
@@ -34,16 +43,6 @@ func TestGetTags(t *testing.T) {
 		{Tag: "", Type: "vmess"},
 	}
 	assert.Equal(t, []string{"n1"}, getTags(s))
-}
-
-func TestGetForList(t *testing.T) {
-	got := getForList([]int{1, 2, 3, 4}, func(v int) (int, bool) {
-		if v%2 == 0 {
-			return v * 10, true
-		}
-		return 0, false
-	})
-	assert.Equal(t, []int{20, 40}, got)
 }
 
 func TestToInsecure(t *testing.T) {
@@ -59,13 +58,13 @@ func TestToInsecure(t *testing.T) {
 	}
 }
 
-func TestPatchMapAutoOutbounds(t *testing.T) {
+func TestPatchAutoOutbounds(t *testing.T) {
 	s := []singbox.SingBoxOut{{Type: "vmess", Tag: "n1", Server: "x", ServerPort: 443}}
-	// patchMap（Patch 使用的路径）在 outFields 下只生成 block，不生成 dns-out
-	d, err := patchMap([]byte(`{}`), s, nil, "", "", nil, nil, true, true)
+	// 命令行版本面向最新 sing-box，不补 block / dns-out 这类已废弃的 outbound
+	d, err := patchTemplate(t, `{}`, s, nil, "", "", nil, nil)
 	require.NoError(t, err)
 	out := d["outbounds"].([]any)
-	require.Len(t, out, 5)
+	require.Len(t, out, 4)
 
 	count := map[string]int{}
 	for _, item := range out {
@@ -74,17 +73,16 @@ func TestPatchMapAutoOutbounds(t *testing.T) {
 	assert.Equal(t, 1, count["select"])
 	assert.Equal(t, 1, count["urltest"])
 	assert.Equal(t, 1, count["direct"])
-	assert.Equal(t, 1, count["block"])
 	assert.Equal(t, 1, count["n1"])
+	assert.Equal(t, 0, count["block"])
 
 	sel := firstByTag(out, "select")
-	selOb := itemOutbounds(sel)
-	assert.Equal(t, "urltest", selOb[0].(string))
+	assert.Equal(t, "urltest", itemOutbounds(sel)[0].(string))
 }
 
-func TestPatchMapAvoidsDuplicateDirectFromTemplate(t *testing.T) {
+func TestPatchAvoidsDuplicateDirectFromTemplate(t *testing.T) {
 	s := []singbox.SingBoxOut{{Type: "vmess", Tag: "n1"}}
-	d, err := patchMap([]byte(`{"outbounds":[{"type":"direct","tag":"direct"}]}`), s, nil, "", "", nil, nil, true, true)
+	d, err := patchTemplate(t, `{"outbounds":[{"type":"direct","tag":"direct"}]}`, s, nil, "", "", nil, nil)
 	require.NoError(t, err)
 	out := d["outbounds"].([]any)
 	count := map[string]int{}
@@ -94,24 +92,34 @@ func TestPatchMapAvoidsDuplicateDirectFromTemplate(t *testing.T) {
 	assert.Equal(t, 1, count["direct"])
 }
 
-func TestPatchMapIncludeFilter(t *testing.T) {
+func TestPatchIncludeFilter(t *testing.T) {
 	s := []singbox.SingBoxOut{
 		{Type: "vmess", Tag: "HK-01"},
 		{Type: "vmess", Tag: "JP-01"},
 	}
-	d, err := patchMap([]byte(`{}`), s, nil, "HK", "", nil, nil, true, false)
+	d, err := patchTemplate(t, `{}`, s, nil, "HK", "", nil, nil)
 	require.NoError(t, err)
 	out := d["outbounds"].([]any)
-	ut := firstByTag(out, "urltest")
-	utOb := itemOutbounds(ut)
+	utOb := itemOutbounds(firstByTag(out, "urltest"))
 	require.Len(t, utOb, 1)
 	assert.Equal(t, "HK-01", utOb[0].(string))
 }
 
-func TestPatchMapExternal(t *testing.T) {
+func TestPatchSkipsUrltestWhenNothingMatches(t *testing.T) {
+	// 过滤后没有节点时不生成 select / urltest，否则 selector 的默认出站会指向不存在的 urltest
+	s := []singbox.SingBoxOut{{Type: "vmess", Tag: "JP-01"}}
+	d, err := patchTemplate(t, `{}`, s, nil, "HK", "", nil, nil)
+	require.NoError(t, err)
+	out := d["outbounds"].([]any)
+	assert.Nil(t, firstByTag(out, "select"))
+	assert.Nil(t, firstByTag(out, "urltest"))
+	assert.NotNil(t, firstByTag(out, "JP-01"))
+}
+
+func TestPatchExternal(t *testing.T) {
 	s := []singbox.SingBoxOut{{Type: "vmess", Tag: "n1"}}
 	extOut := []any{map[string]any{"type": "direct", "tag": "ext1"}}
-	d, err := patchMap([]byte(`{}`), s, nil, "", "", extOut, []string{"exttag"}, true, false)
+	d, err := patchTemplate(t, `{}`, s, nil, "", "", extOut, []string{"exttag"})
 	require.NoError(t, err)
 	out := d["outbounds"].([]any)
 	found := map[string]bool{}
@@ -119,14 +127,13 @@ func TestPatchMapExternal(t *testing.T) {
 		found[itemTag(item)] = true
 	}
 	assert.True(t, found["ext1"])
-	// extags 追加在节点 tag 之后，extTag 应进入 urltest
-	ut := firstByTag(out, "urltest")
-	utOb := itemOutbounds(ut)
+	// extags 追加在节点 tag 之后，且应进入 urltest
+	utOb := itemOutbounds(firstByTag(out, "urltest"))
 	assert.Equal(t, "n1", utOb[0].(string))
 	assert.Equal(t, "exttag", utOb[1].(string))
 }
 
-func TestPatchMapAllPlaceholderAndTemplateFilter(t *testing.T) {
+func TestPatchAllPlaceholderAndTemplateFilter(t *testing.T) {
 	tpl := `{
   "outbounds": [
     {"type":"urltest","tag":"auto","filter":[{"action":"include","keywords":"HK"}]},
@@ -134,7 +141,7 @@ func TestPatchMapAllPlaceholderAndTemplateFilter(t *testing.T) {
   ]
 }`
 	s := []singbox.SingBoxOut{{Type: "vmess", Tag: "HK-01"}, {Type: "vmess", Tag: "JP-01"}}
-	d, err := patchMap([]byte(tpl), s, nil, "", "", nil, nil, true, false)
+	d, err := patchTemplate(t, tpl, s, nil, "", "", nil, nil)
 	require.NoError(t, err)
 	out := d["outbounds"].([]any)
 
@@ -158,32 +165,30 @@ func TestApplyFilter(t *testing.T) {
 		"tag":    "a",
 		"filter": []any{map[string]any{"action": "include", "keywords": "HK|JP"}},
 	}
-	got := applyFilter(outbound, all)
-	assert.Equal(t, []string{"HK-01", "HK-02", "JP-01"}, got)
+	assert.Equal(t, []string{"HK-01", "HK-02", "JP-01"}, applyFilter(outbound, all))
 
 	outbound2 := map[string]any{
 		"type":   "urltest",
 		"filter": []any{map[string]any{"action": "exclude", "keywords": "02"}},
 	}
-	got2 := applyFilter(outbound2, all)
-	assert.Equal(t, []string{"HK-01", "JP-01", "SG-01"}, got2)
-}
-
-func TestRemoveFilterField(t *testing.T) {
-	outbound := map[string]any{"type": "urltest", "tag": "a", "filter": []any{}}
-	res := removeFilterField(outbound).(map[string]any)
-	assert.NotContains(t, res, "filter")
+	assert.Equal(t, []string{"HK-01", "JP-01", "SG-01"}, applyFilter(outbound2, all))
 }
 
 func TestPatchOutputsIndentedJSON(t *testing.T) {
 	s := []singbox.SingBoxOut{{Type: "vmess", Tag: "n1"}}
 	b, err := Patch([]byte(`{}`), s, nil, "", "", nil)
 	require.NoError(t, err)
-	// 格式化缩进
 	assert.Contains(t, string(b), "\n")
 	var m map[string]any
 	require.NoError(t, json.Unmarshal(b, &m))
 	require.NotNil(t, m["outbounds"])
+}
+
+func TestPatchRejectsNullTemplate(t *testing.T) {
+	_, err := Patch([]byte(`null`), nil, nil, "", "", nil)
+	assert.Error(t, err)
+	_, err = PatchMap([]byte(`null`), nil, nil, "", "", nil, nil, false, false)
+	assert.Error(t, err)
 }
 
 // --- 类型无关的 outbound 访问辅助函数 ---

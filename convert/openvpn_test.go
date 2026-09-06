@@ -551,8 +551,7 @@ password: p
 `)
 	ep, err := openvpnEndpoint(&p)
 	require.NoError(t, err)
-	tpl := []byte(`{"outbounds":[]}`)
-	m, err := patchMap(tpl, nil, []*singbox.SingBoxEndpoint{ep}, "", "", nil, nil, true, true)
+	m, err := patchTemplate(t, `{"outbounds":[]}`, nil, []*singbox.SingBoxEndpoint{ep}, "", "", nil, nil)
 	require.NoError(t, err)
 	raw, ok := m["endpoints"]
 	require.True(t, ok)

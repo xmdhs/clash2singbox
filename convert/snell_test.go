@@ -22,7 +22,7 @@ port: "2345"
 psk: mypsk123456
 version: 4
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -58,7 +58,7 @@ obfs-opts:
   mode: http
   host: bing.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -89,7 +89,7 @@ version: 4
 obfs-opts:
   mode: http
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -109,7 +109,7 @@ obfs-opts:
   mode: tls
   host: example.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -128,7 +128,7 @@ version: 4
 obfs-opts:
   mode: tls
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -146,7 +146,7 @@ psk: psk
 version: 4
 reuse: false
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -168,7 +168,7 @@ obfs-opts:
   mode: none
   host: bing.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -185,7 +185,7 @@ port: "2345"
 psk: psk
 version: 5
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -201,7 +201,7 @@ port: "2345"
 psk: yyy
 version: 6
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -230,7 +230,7 @@ obfs-opts:
   mode: http
   host: bing.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -249,7 +249,7 @@ port: "2345"
 psk: psk
 version: "4"
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -264,7 +264,7 @@ server: example.com
 port: "2345"
 version: 4
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	_, err = snell(&p, s, model.SINGLATEST)
 	require.Error(t, err)
@@ -280,7 +280,7 @@ port: "2345"
 psk: ""
 version: 4
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	_, err = snell(&p, s, model.SINGLATEST)
 	require.Error(t, err)
@@ -296,7 +296,7 @@ port: "2345"
 psk: psk
 version: 1
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	_, err = snell(&p, s, model.SINGLATEST)
 	require.Error(t, err)
@@ -313,7 +313,7 @@ port: "2345"
 psk: psk
 version: 2
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	_, err = snell(&p, s, model.SINGLATEST)
 	require.Error(t, err)
@@ -329,7 +329,7 @@ port: "2345"
 psk: psk
 version: 3
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	_, err = snell(&p, s, model.SINGLATEST)
 	require.Error(t, err)
@@ -345,7 +345,7 @@ port: "2345"
 psk: psk
 version: 0
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	_, err = snell(&p, s, model.SINGLATEST)
 	require.Error(t, err)
@@ -360,7 +360,7 @@ server: example.com
 port: "2345"
 psk: psk
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	_, err = snell(&p, s, model.SINGLATEST)
 	require.Error(t, err)
@@ -379,7 +379,7 @@ obfs-opts:
   mode: shadow-tls
   host: bing.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	_, err = snell(&p, s, model.SINGLATEST)
 	require.Error(t, err)
@@ -399,7 +399,7 @@ obfs-opts:
   mode: restls
   host: bing.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	_, err = snell(&p, s, model.SINGLATEST)
 	require.Error(t, err)
@@ -418,7 +418,7 @@ obfs-opts:
   mode: jls
   host: bing.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	_, err = snell(&p, s, model.SINGLATEST)
 	require.Error(t, err)
@@ -436,7 +436,7 @@ version: 4
 obfs-opts:
   mode: foo
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	_, err = snell(&p, s, model.SINGLATEST)
 	require.Error(t, err)
@@ -454,7 +454,7 @@ version: 4
 tfo: true
 mptcp: true
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -474,7 +474,7 @@ smux:
   enabled: true
   max-streams: 8
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -496,7 +496,7 @@ obfs-opts:
   mode: http
   host: bing.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -522,7 +522,7 @@ port: "2345"
 psk: psk
 version: 6
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := snell(&p, s, model.SINGLATEST)
 	require.NoError(t, err)

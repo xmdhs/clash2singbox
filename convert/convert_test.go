@@ -30,9 +30,9 @@ uuid: test-uuid
 cipher: auto
 alterId: 2
 `)
-	s, typ, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	assert.Equal(t, "vmess", typ)
+	assert.Equal(t, "vmess", s.Type)
 	err = vmess(&p, s)
 	require.NoError(t, err)
 	assert.Equal(t, "test-uuid", s.UUID)
@@ -55,7 +55,7 @@ skip-cert-verify: true
 client-fingerprint: chrome
 alpn: [h2, http/1.1]
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vmess(&p, s)
 	require.NoError(t, err)
@@ -81,7 +81,7 @@ reality-opts:
   public-key: pub-key
   short-id: short-id
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vmess(&p, s)
 	require.NoError(t, err)
@@ -108,7 +108,7 @@ ws-opts:
   early-data-header-name: Sec-WebSocket-Protocol
   max-early-data: 2048
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vmess(&p, s)
 	require.NoError(t, err)
@@ -133,7 +133,7 @@ ws-opts:
   path: /upgrade
   v2ray-http-upgrade: true
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vmess(&p, s)
 	require.NoError(t, err)
@@ -153,7 +153,7 @@ uuid: uuid
 grpc-opts:
   grpc-service-name: my-grpc-svc
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vmess(&p, s)
 	require.NoError(t, err)
@@ -175,7 +175,7 @@ h2-opts:
   host: [h2.example.com]
   path: /h2
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vmess(&p, s)
 	require.NoError(t, err)
@@ -195,7 +195,7 @@ port: "443"
 uuid: uuid
 packet-encoding: invalid
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vmess(&p, s)
 	require.NoError(t, err)
@@ -214,7 +214,7 @@ uuid: uuid
 tls: true
 flow: xtls-rprx-vision
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vless(&p, s)
 	require.NoError(t, err)
@@ -238,7 +238,7 @@ flow: xtls-rprx-vision
 ws-opts:
   path: /ws
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vless(&p, s)
 	require.NoError(t, err)
@@ -254,7 +254,7 @@ port: "443"
 uuid: uuid
 flow: xtls-rprx-direct
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vless(&p, s)
 	assert.Error(t, err)
@@ -271,9 +271,9 @@ port: "443"
 password: pass
 sni: sni.example.com
 `)
-	s, typ, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	assert.Equal(t, "trojan", typ)
+	assert.Equal(t, "trojan", s.Type)
 	err = trojan(&p, s)
 	require.NoError(t, err)
 
@@ -294,7 +294,7 @@ network: ws
 ws-opts:
   path: /trojan-ws
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = trojan(&p, s)
 	require.NoError(t, err)
@@ -314,7 +314,7 @@ password: pass
 grpc-opts:
   grpc-service-name: trojan-grpc
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = trojan(&p, s)
 	require.NoError(t, err)
@@ -335,7 +335,7 @@ port: "8388"
 password: pass
 cipher: aes-256-gcm
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := ss(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -354,7 +354,7 @@ port: "8388"
 password: pass
 cipher: aes-256-gcm
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := ss(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -379,7 +379,7 @@ cipher: aes-256-gcm
 udp-over-tcp: true
 udp-over-tcp-version: 2
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := ss(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -401,7 +401,7 @@ plugin-opts:
   mode: http
   host: obfs.example.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := ss(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -425,7 +425,7 @@ plugin-opts:
   password: stls-pass
   version: 3
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := ss(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -456,7 +456,7 @@ port: "443"
 up: "50"
 down: "100"
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = hysteria(&p, s)
 	require.NoError(t, err)
@@ -475,7 +475,7 @@ port: "443"
 up: "50 Mbps"
 down: "100 Mbps"
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = hysteria(&p, s)
 	require.NoError(t, err)
@@ -495,7 +495,7 @@ up: "10"
 down: "20"
 auth-str: my-auth
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = hysteria(&p, s)
 	require.NoError(t, err)
@@ -512,7 +512,7 @@ up: "10"
 down: "20"
 obfs: xplus-obfs-pass
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = hysteria(&p, s)
 	require.NoError(t, err)
@@ -530,7 +530,7 @@ up: "10"
 down: "20"
 ca-str: PEM-CERT-DATA
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = hysteria(&p, s)
 	require.NoError(t, err)
@@ -547,7 +547,7 @@ port: "443"
 up: "10"
 down: "20"
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = hysteria(&p, s)
 	require.NoError(t, err)
@@ -565,7 +565,7 @@ up: "10"
 down: "20"
 protocol: faketcp
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = hysteria(&p, s)
 	assert.Error(t, err)
@@ -582,7 +582,7 @@ down: "20"
 recv-window: 1024
 recv-window-conn: 512
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = hysteria(&p, s)
 	require.NoError(t, err)
@@ -602,9 +602,9 @@ password: hy2-pass
 up: "50"
 down: "100"
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	out, err := hysteia2(&p, s, model.SINGLATEST)
+	out, err := hysteria2(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
 	require.Len(t, out, 1)
 	assert.Equal(t, "hy2-pass", out[0].Password)
@@ -624,9 +624,9 @@ password: pass
 up: "100Mbps"
 down: "1Gbps"
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	out, err := hysteia2(&p, s, model.SINGLATEST)
+	out, err := hysteria2(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
 	assert.Equal(t, 100, out[0].UpMbps)
 	assert.Equal(t, 1000, out[0].DownMbps)
@@ -642,9 +642,9 @@ password: pass
 obfs: salamander
 obfs-password: obfs-pass
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	out, err := hysteia2(&p, s, model.SINGLATEST)
+	out, err := hysteria2(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
 	require.NotNil(t, out[0].Obfs)
 	b, _ := json.Marshal(out[0].Obfs)
@@ -661,9 +661,9 @@ port: "443"
 password: pass
 obfs-password: obfs-pass
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	out, err := hysteia2(&p, s, model.SINGLATEST)
+	out, err := hysteria2(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
 	assert.Nil(t, out[0].Obfs)
 }
@@ -689,9 +689,9 @@ realm-opts:
     - stun.nextcloud.com:3478
     - stun.sip.us:3478
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	out, err := hysteia2(&p, s, model.SINGLATEST)
+	out, err := hysteria2(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
 	require.Len(t, out, 1)
 	require.NotNil(t, out[0].Realm)
@@ -734,9 +734,9 @@ realm-opts:
   stun-servers:
     - stun.example.com:3478
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	out, err := hysteia2(&p, s, model.SINGLATEST)
+	out, err := hysteria2(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
 	require.NotNil(t, out[0].Realm)
 	assert.Equal(t, "", out[0].Realm.Token)
@@ -760,9 +760,9 @@ realm-opts:
   stun-servers:
     - stun.example.com:3478
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	out, err := hysteia2(&p, s, model.SINGLATEST)
+	out, err := hysteria2(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
 	assert.Nil(t, out[0].Realm)
 	assert.Equal(t, "server.com", out[0].Server)
@@ -782,9 +782,9 @@ realm-opts:
   stun-servers:
     - stun.example.com:3478
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	out, err := hysteia2(&p, s, model.SINGLATEST)
+	out, err := hysteria2(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
 	assert.Nil(t, out[0].Realm)
 	assert.Equal(t, "server.com", out[0].Server)
@@ -807,9 +807,9 @@ realm-opts:
   stun-servers:
     - stun.example.com:3478
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	out, err := hysteia2(&p, s, model.SINGLATEST)
+	out, err := hysteria2(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
 	assert.Empty(t, out[0].ServerPorts)
 	assert.Equal(t, "", out[0].HopInterval)
@@ -875,7 +875,7 @@ udp-relay-mode: native
 reduce-rtt: true
 heartbeat-interval: 10000
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := tuic(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -901,7 +901,7 @@ uuid: uuid
 password: pass
 congestion-controller: cubic
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := tuic(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -921,7 +921,7 @@ uuid: uuid
 password: pass
 ip: 1.2.3.4
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := tuic(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -938,7 +938,7 @@ uuid: uuid
 password: pass
 udp-over-stream: true
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := tuic(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -955,7 +955,7 @@ uuid: uuid
 password: pass
 disable-sni: true
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := tuic(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -1082,9 +1082,9 @@ port: "1080"
 username: user
 password: pass
 `)
-	s, typ, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	assert.Equal(t, "socks", typ)
+	assert.Equal(t, "socks", s.Type)
 	err = socks5(&p, s)
 	require.NoError(t, err)
 	assert.Equal(t, "user", s.Username)
@@ -1103,7 +1103,7 @@ password: pass
 tls: true
 sni: socks.example.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = socks5(&p, s)
 	require.NoError(t, err)
@@ -1121,9 +1121,9 @@ port: "8080"
 username: user
 password: pass
 `)
-	s, typ, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
-	assert.Equal(t, "http", typ)
+	assert.Equal(t, "http", s.Type)
 	err = httpOpts(&p, s)
 	require.NoError(t, err)
 	assert.Equal(t, "user", s.Username)
@@ -1143,7 +1143,7 @@ idle-session-check-interval: 30
 idle-session-timeout: 60
 min-idle-session: 3
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := anytls(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -1172,7 +1172,7 @@ smux:
   padding: true
   protocol: h2mux
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	require.NotNil(t, s.Multiplex)
 	assert.True(t, s.Multiplex.Enabled)
@@ -1190,7 +1190,7 @@ port: "443"
 tfo: true
 mptcp: true
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	assert.True(t, s.TcpFastOpen)
 	assert.True(t, s.TcpMultiPath)
@@ -1203,7 +1203,7 @@ type: unknown
 server: example.com
 port: "443"
 `)
-	_, _, err := comm(&p)
+	_, err := comm(&p)
 	assert.Error(t, err)
 }
 
@@ -1219,7 +1219,7 @@ tls: true
 servername: first.example.com
 sni: second.example.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vmess(&p, s)
 	require.NoError(t, err)
@@ -1235,7 +1235,7 @@ port: "443"
 tls: true
 sni: sni.example.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vmess(&p, s)
 	require.NoError(t, err)
@@ -1250,7 +1250,7 @@ server: example.com
 port: "443"
 tls: true
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	err = vmess(&p, s)
 	require.NoError(t, err)

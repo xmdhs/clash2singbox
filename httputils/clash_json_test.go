@@ -9,28 +9,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetSingValidJSONScalar(t *testing.T) {
-	outbounds, tags, proxies, err := getSing([]byte(`true`), "example.com", false)
+func TestParseSubBodyValidJSONScalar(t *testing.T) {
+	// 有效但无法识别的 JSON 视为空订阅，不报错
+	res, err := parseSubBody([]byte(`true`))
 	require.NoError(t, err)
-	assert.Empty(t, outbounds)
-	assert.Empty(t, tags)
-	assert.Empty(t, proxies)
+	assert.Empty(t, res.singNodes)
+	assert.Empty(t, res.singTags)
+	assert.Empty(t, res.proxies)
 }
 
-func TestGetSingValidJSONWithoutOutbounds(t *testing.T) {
-	outbounds, tags, proxies, err := getSing([]byte(`{"log":{}}`), "example.com", false)
+func TestParseSubBodyValidJSONWithoutOutbounds(t *testing.T) {
+	res, err := parseSubBody([]byte(`{"log":{}}`))
 	require.NoError(t, err)
-	assert.Empty(t, outbounds)
-	assert.Empty(t, tags)
-	assert.Empty(t, proxies)
+	assert.Empty(t, res.singNodes)
+	assert.Empty(t, res.singTags)
+	assert.Empty(t, res.proxies)
 }
 
-func TestGetSingValidJSONClashDocument(t *testing.T) {
-	outbounds, tags, proxies, err := getSing([]byte(`{"proxies":[{"name":"n1"}]}`), "example.com", false)
+func TestParseSubBodyJSONClashDocument(t *testing.T) {
+	// JSON 是 YAML 的子集，含 proxies 的 JSON 按 Clash 配置解析
+	res, err := parseSubBody([]byte(`{"proxies":[{"name":"n1"}]}`))
 	require.NoError(t, err)
-	assert.Empty(t, outbounds)
-	assert.Empty(t, tags)
-	assert.Empty(t, proxies)
+	require.Len(t, res.proxies, 1)
+	assert.Equal(t, "n1", res.proxies[0].Name)
+	assert.Empty(t, res.singNodes)
 }
 
 func TestGetAnyJSONClashDocumentUsesYAML(t *testing.T) {
@@ -44,21 +46,24 @@ func TestGetAnyJSONClashDocumentUsesYAML(t *testing.T) {
 	assert.Empty(t, tags)
 }
 
-func TestGetSingObjectOutbound(t *testing.T) {
-	outbounds, tags, proxies, err := getSing([]byte(`{"outbounds":{"type":"vmess","tag":"n1"}}`), "example.com", false)
+func TestParseSubBodyObjectOutbound(t *testing.T) {
+	// outbounds 写成单个对象时按一个 outbound 处理
+	res, err := parseSubBody([]byte(`{"outbounds":{"type":"vmess","tag":"n1"}}`))
 	require.NoError(t, err)
-	require.Len(t, outbounds, 1)
-	assert.Equal(t, "n1", outbounds[0]["tag"])
-	assert.Equal(t, []string{"n1"}, tags)
-	assert.Empty(t, proxies)
+	require.Len(t, res.singNodes, 1)
+	assert.Equal(t, "n1", res.singNodes[0]["tag"])
+	assert.Equal(t, []string{"n1"}, res.singTags)
+	assert.Empty(t, res.proxies)
 }
 
-func TestGetSingJSONAddTag(t *testing.T) {
-	outbounds, tags, proxies, err := getSing([]byte(`{"outbounds":[{"type":"vmess","tag":"n1"},{"type":"shadowtls","tag":"stls"}]}`), "example.com", true)
+func TestParseSubBodyAddTagSkipsShadowTLS(t *testing.T) {
+	res, err := parseSubBody([]byte(`{"outbounds":[{"type":"vmess","tag":"n1"},{"type":"shadowtls","tag":"stls"}]}`))
 	require.NoError(t, err)
-	require.Len(t, outbounds, 2)
-	assert.Equal(t, "n1[example.com]", outbounds[0]["tag"])
-	assert.Equal(t, "stls[example.com]", outbounds[1]["tag"])
-	assert.Equal(t, []string{"n1[example.com]"}, tags)
-	assert.Empty(t, proxies)
+	res.addHostSuffix("example.com")
+	require.Len(t, res.singNodes, 2)
+	assert.Equal(t, "n1[example.com]", res.singNodes[0]["tag"])
+	assert.Equal(t, "stls[example.com]", res.singNodes[1]["tag"])
+	// shadowtls 只作 detour，不进入可选 tag
+	assert.Equal(t, []string{"n1[example.com]"}, res.singTags)
+	assert.Empty(t, res.proxies)
 }

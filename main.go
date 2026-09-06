@@ -10,7 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/samber/lo"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/httputils"
 	"github.com/xmdhs/clash2singbox/model"
@@ -41,7 +40,7 @@ func init() {
 	flag.StringVar(&exclude, "exclude", "", "urltest 排除的节点")
 	flag.BoolVar(&insecure, "insecure", false, "所有节点不验证证书")
 	flag.BoolVar(&ignore, "ignore", true, "忽略无法转换的节点")
-	// 注意：不在此处 flag.Parse()，否则与 go test 的 flag 冲突
+	// 不在此处 flag.Parse()，否则与 go test 的 flag 冲突
 }
 
 func main() {
@@ -52,51 +51,51 @@ func main() {
 var httpClient = &http.Client{Timeout: 10 * time.Second}
 
 func run(url, path, outPath, template, include, exclude string, insecure bool) {
-	c := clash.Clash{}
-	var singList []map[string]any
-	var tags []string
-	if url != "" {
+	var c clash.Clash
+	var singNodes []map[string]any
+	var singTags []string
+	switch {
+	case url != "":
 		var err error
-		c, singList, tags, err = httputils.GetAny(context.TODO(), httpClient, url, false)
+		c, singNodes, singTags, err = httputils.GetAny(context.TODO(), httpClient, url, false)
 		if err != nil {
 			panic(err)
 		}
-	} else if path != "" {
+	case path != "":
 		b, err := os.ReadFile(path)
 		if err != nil {
 			panic(err)
 		}
-		err = yaml.Unmarshal(b, &c)
-		if err != nil {
+		if err := yaml.Unmarshal(b, &c); err != nil {
 			panic(err)
 		}
-	} else {
+	default:
 		panic("url 和 i 参数不能都为空")
 	}
 
 	if insecure {
 		convert.ToInsecure(&c)
 	}
-
 	s, eps, err := convert.Clash2sing(c, model.SINGLATEST)
 	if err != nil {
-		fmt.Println(err)
-	}
-	outb, err := os.ReadFile(template)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			outb = configByte
-		} else {
-			panic(err)
-		}
+		fmt.Println(err) // 个别节点转换失败不影响其余节点
 	}
 
-	outb, err = convert.Patch(outb, s, eps, include, exclude, lo.Map(singList, func(item map[string]any, index int) any {
-		return item
-	}), tags...)
+	tpl, err := os.ReadFile(template)
+	if errors.Is(err, os.ErrNotExist) {
+		tpl = configByte
+	} else if err != nil {
+		panic(err)
+	}
+	extOut := make([]any, len(singNodes))
+	for i, node := range singNodes {
+		extOut[i] = node
+	}
+	out, err := convert.Patch(tpl, s, eps, include, exclude, extOut, singTags...)
 	if err != nil {
 		panic(err)
 	}
-
-	os.WriteFile(outPath, outb, 0644)
+	if err := os.WriteFile(outPath, out, 0o644); err != nil {
+		panic(err)
+	}
 }

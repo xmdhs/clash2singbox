@@ -68,6 +68,9 @@ func TestGetAnyMultiBase64Subscriptions(t *testing.T) {
 	c, _, _, err := GetAny(context.Background(), client, encoded, false)
 	require.NoError(t, err)
 	require.Len(t, c.Proxies, 2)
+	// 多订阅的输出顺序与输入一致
+	assert.Equal(t, "a", c.Proxies[0].Name)
+	assert.Equal(t, "b", c.Proxies[1].Name)
 }
 
 func TestGetAnyMultiPipedSubscriptions(t *testing.T) {
@@ -78,6 +81,8 @@ func TestGetAnyMultiPipedSubscriptions(t *testing.T) {
 	c, _, _, err := GetAny(context.Background(), client, "https://example.com/1|https://example.com/2", false)
 	require.NoError(t, err)
 	require.Len(t, c.Proxies, 2)
+	assert.Equal(t, "a", c.Proxies[0].Name)
+	assert.Equal(t, "b", c.Proxies[1].Name)
 }
 
 func TestGetAnyAddTagGroups(t *testing.T) {
@@ -117,7 +122,7 @@ func TestGetAnyDirectNode(t *testing.T) {
 }
 
 func TestGetAnyInnerSubscriptionFails(t *testing.T) {
-	// 订阅内容既不是 YAML 也不是有效订阅 → getSing 报错
+	// 订阅内容既不是 YAML 也不是有效订阅 → 解析报错
 	client := &http.Client{Transport: staticRT{status: 200, body: []byte("not a yaml\nor subscription")}}
 	_, _, _, err := GetAny(context.Background(), client, "https://example.com/sub", false)
 	assert.Error(t, err)
@@ -143,16 +148,16 @@ func TestGetAnyTransportError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestGetSingPlainDecodedLines(t *testing.T) {
+func TestParseSubBodyPlainDecodedLines(t *testing.T) {
 	vmess := base64.StdEncoding.EncodeToString([]byte(`{"add":"1.1.1.1","port":443,"id":"u","net":"tcp","ps":"a"}`))
 	// 内部空行应被跳过（首尾空行会被 TrimSpace 吃掉）
 	content := "vmess://" + vmess + "\n\nvmess://" + vmess
-	outList, tags, proxies, err := getSing([]byte(content), "example.com", false)
+	res, err := parseSubBody([]byte(content))
 	require.NoError(t, err)
-	assert.Nil(t, outList)
-	assert.Nil(t, tags)
-	require.Len(t, proxies, 2)
-	assert.Equal(t, "a", proxies[0].Name)
+	assert.Nil(t, res.singNodes)
+	assert.Nil(t, res.singTags)
+	require.Len(t, res.proxies, 2)
+	assert.Equal(t, "a", res.proxies[0].Name)
 }
 
 type failBody struct{}
@@ -168,10 +173,10 @@ func TestHttpGetReadError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestGetSingAllLinesFail(t *testing.T) {
+func TestParseSubBodyAllLinesFail(t *testing.T) {
 	// base64 内容本身合法，但解码出的每行都是无法解析的节点
 	content := base64.StdEncoding.EncodeToString([]byte("garbage-line-1\ngarbage-line-2"))
-	_, _, _, err := getSing([]byte(content), "example.com", false)
+	_, err := parseSubBody([]byte(content))
 	assert.Error(t, err)
 }
 

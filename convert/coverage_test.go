@@ -98,7 +98,7 @@ smux:
   min-streams: 8
   max-connections: 8
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	require.NotNil(t, s.Multiplex)
 	assert.Equal(t, 8, s.Multiplex.MinStreams)
@@ -129,24 +129,24 @@ func TestHysteriaCaStr1(t *testing.T) {
 	assert.Equal(t, []string{"PEM1"}, s.TLS.Certificate)
 }
 
-func TestHysteia2PortsErrorLatest(t *testing.T) {
+func TestHysteria2PortsErrorLatest(t *testing.T) {
 	p := &clash.Proxies{Type: "hysteria2", Name: "h", Server: "x", Ports: "123-x", Up: "1", Down: "1"}
 	s := &singbox.SingBoxOut{}
-	_, err := hysteia2(p, s, model.SINGLATEST)
+	_, err := hysteria2(p, s, model.SINGLATEST)
 	assert.Error(t, err)
 }
 
-func TestHysteia2PortsError110(t *testing.T) {
+func TestHysteria2PortsError110(t *testing.T) {
 	p := &clash.Proxies{Type: "hysteria2", Name: "h", Server: "x", Ports: "123-x", Up: "1", Down: "1"}
 	s := &singbox.SingBoxOut{}
-	_, err := hysteia2(p, s, model.SING110)
+	_, err := hysteria2(p, s, model.SING110)
 	assert.Error(t, err)
 }
 
-func TestHysteia2UpDownError(t *testing.T) {
+func TestHysteria2UpDownError(t *testing.T) {
 	p := &clash.Proxies{Type: "hysteria2", Name: "h", Server: "x", Port: "443", Up: "invalid", Down: "invalid"}
 	s := &singbox.SingBoxOut{}
-	_, err := hysteia2(p, s, model.SINGLATEST)
+	_, err := hysteria2(p, s, model.SINGLATEST)
 	assert.Error(t, err)
 }
 
@@ -225,7 +225,7 @@ plugin-opts:
   password: sp
   version: 3
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	out, err := ss(&p, s, model.SINGLATEST)
 	require.NoError(t, err)
@@ -331,7 +331,7 @@ ws-opts:
   headers:
     Host: hs.example.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	require.NoError(t, vmess(&p, s))
 	assert.Equal(t, "hs.example.com", s.Transport.Host)
@@ -352,7 +352,7 @@ http-opts:
     Host:
       - host.example.com
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	require.NoError(t, vmess(&p, s))
 	assert.Equal(t, "http", s.Transport.Type)
@@ -380,7 +380,6 @@ func TestWireguardEndpointInvalidPort(t *testing.T) {
 func TestApplyFilterAllBranches(t *testing.T) {
 	all := []string{"HK-01", "HK-02", "JP", "SG-01"}
 
-	assert.Equal(t, all, applyFilter("not-a-map", all))
 	assert.Equal(t, all, applyFilter(map[string]any{"type": "urltest"}, all))
 	assert.Equal(t, all, applyFilter(map[string]any{"filter": "not-slice"}, all))
 	// 非 map 规则、缺 acton/keywords、类型不符的规则被忽略
@@ -409,11 +408,7 @@ func TestApplyFilterAllBranches(t *testing.T) {
 		map[string]any{"filter": []any{map[string]any{"action": "include", "keywords": `?\`}}}, all))
 }
 
-func TestRemoveFilterFieldNonMap(t *testing.T) {
-	assert.Equal(t, "str", removeFilterField("str"))
-}
-
-// --- PatchMap / patchMap 补充 ---
+// --- PatchMap / patch 补充 ---
 
 func TestPatchMapExported(t *testing.T) {
 	s := []singbox.SingBoxOut{{Type: "vmess", Tag: "n1"}}
@@ -443,7 +438,7 @@ func TestPatchMapExportedNoFields(t *testing.T) {
 func TestPatchMapStringAll(t *testing.T) {
 	tpl := `{"outbounds":[{"type":"urltest","tag":"auto","outbounds":"{all}","filter":[{"action":"include","keywords":"HK"}]}]}`
 	s := []singbox.SingBoxOut{{Type: "vmess", Tag: "HK-01"}, {Type: "vmess", Tag: "JP-01"}}
-	d, err := patchMap([]byte(tpl), s, nil, "", "", nil, nil, true, false)
+	d, err := patchTemplate(t, tpl, s, nil, "", "", nil, nil)
 	require.NoError(t, err)
 	out := d["outbounds"].([]any)
 	auto := firstByTag(out, "auto")
@@ -458,7 +453,7 @@ func TestPatchMapArrayAllWithTemplateUrltestFilter(t *testing.T) {
   ]
 }`
 	s := []singbox.SingBoxOut{{Type: "vmess", Tag: "HK-01"}, {Type: "vmess", Tag: "JP-01"}}
-	d, err := patchMap([]byte(tpl), s, nil, "", "", nil, nil, true, false)
+	d, err := patchTemplate(t, tpl, s, nil, "", "", nil, nil)
 	require.NoError(t, err)
 	out := d["outbounds"].([]any)
 	// auto 的 outbounds 被 filter 到 HK-01
@@ -476,21 +471,21 @@ func TestPatchMapEndpoints(t *testing.T) {
 	}}
 	// 模板已有 endpoints 时应合并
 	tpl := `{"endpoints":[{"type":"block","tag":"blk"}]}`
-	d, err := patchMap([]byte(tpl), nil, eps, "", "", nil, nil, true, false)
+	d, err := patchTemplate(t, tpl, nil, eps, "", "", nil, nil)
 	require.NoError(t, err)
 	endpoints := d["endpoints"].([]any)
 	require.Len(t, endpoints, 2)
 	// 空模板也应写入
-	d2, err := patchMap([]byte(`{}`), nil, eps, "", "", nil, nil, false, false)
+	d2, err := patchTemplate(t, `{}`, nil, eps, "", "", nil, nil)
 	require.NoError(t, err)
 	assert.Len(t, d2["endpoints"].([]any), 1)
 }
 
 func TestPatchMapFilterError(t *testing.T) {
 	s := []singbox.SingBoxOut{{Type: "vmess", Tag: "n1"}}
-	_, err := patchMap([]byte(`{}`), s, nil, "[", "", nil, nil, true, false)
+	_, err := patchTemplate(t, `{}`, s, nil, "[", "", nil, nil)
 	assert.Error(t, err)
-	_, err = patchMap([]byte(`{}`), s, nil, "", "[", nil, nil, true, false)
+	_, err = patchTemplate(t, `{}`, s, nil, "", "[", nil, nil)
 	assert.Error(t, err)
 }
 
@@ -504,9 +499,9 @@ func TestPatchInvalidTemplate(t *testing.T) {
 
 // --- 其余边缘分支补充 ---
 
-func TestHysteia2DownErrorOnly(t *testing.T) {
+func TestHysteria2DownErrorOnly(t *testing.T) {
 	p := &clash.Proxies{Type: "hysteria2", Name: "h", Server: "x", Port: "443", Up: "1", Down: "invalid"}
-	_, err := hysteia2(p, &singbox.SingBoxOut{}, model.SINGLATEST)
+	_, err := hysteria2(p, &singbox.SingBoxOut{}, model.SINGLATEST)
 	assert.Error(t, err)
 }
 
@@ -556,7 +551,7 @@ ws-headers:
   Host: from-wshead
   X-Test: v1
 `)
-	s, _, err := comm(&p)
+	s, err := comm(&p)
 	require.NoError(t, err)
 	require.NoError(t, vmess(&p, s))
 	assert.Equal(t, map[string][]string{"Host": {"from-wshead"}, "X-Test": {"v1"}}, s.Transport.Headers)

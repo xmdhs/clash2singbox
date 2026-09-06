@@ -6,13 +6,13 @@ import (
 )
 
 func httpOpts(p *clash.Proxies, s *singbox.SingBoxOut) error {
-	tls(p, s)
+	tls(p, s, bool(p.Tls))
 	s.Username = p.Username
 	return nil
 }
 
 func socks5(p *clash.Proxies, s *singbox.SingBoxOut) error {
-	tls(p, s)
+	tls(p, s, bool(p.Tls))
 	s.Username = p.Username
 	return nil
 }

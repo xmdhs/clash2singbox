@@ -72,7 +72,7 @@ func TestGetAnyHttpError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestGetSingJSONConfig(t *testing.T) {
+func TestParseSubBodySingBoxJSON(t *testing.T) {
 	config := []byte(`{
   "outbounds": [
     {"type":"vmess","tag":"node1","server":"x"},
@@ -80,37 +80,37 @@ func TestGetSingJSONConfig(t *testing.T) {
     {"type":"selector","tag":"sel"}
   ]
 }`)
-	outList, tags, proxies, err := getSing(config, "example.com", false)
+	res, err := parseSubBody(config)
 	require.NoError(t, err)
-	require.Len(t, outList, 1)
-	assert.Equal(t, "node1", outList[0]["tag"])
-	assert.Equal(t, []string{"node1"}, tags)
-	assert.Nil(t, proxies)
+	require.Len(t, res.singNodes, 1)
+	assert.Equal(t, "node1", res.singNodes[0]["tag"])
+	assert.Equal(t, []string{"node1"}, res.singTags)
+	assert.Nil(t, res.proxies)
 }
 
-func TestGetSingJSONConfigAddTag(t *testing.T) {
-	config := []byte(`{"outbounds":[{"type":"vmess","tag":"node1"}]}`)
-	outList, tags, _, err := getSing(config, "example.com", true)
+func TestParseSubBodySingBoxJSONAddTag(t *testing.T) {
+	res, err := parseSubBody([]byte(`{"outbounds":[{"type":"vmess","tag":"node1"}]}`))
 	require.NoError(t, err)
-	require.Len(t, outList, 1)
-	assert.Equal(t, "node1[example.com]", outList[0]["tag"])
-	assert.Equal(t, []string{"node1[example.com]"}, tags)
+	res.addHostSuffix("example.com")
+	require.Len(t, res.singNodes, 1)
+	assert.Equal(t, "node1[example.com]", res.singNodes[0]["tag"])
+	assert.Equal(t, []string{"node1[example.com]"}, res.singTags)
 }
 
-func TestGetSingBase64Subscription(t *testing.T) {
+func TestParseSubBodyBase64Subscription(t *testing.T) {
 	body := "vmess://" + base64.StdEncoding.EncodeToString([]byte(`{"add":"1.1.1.1","port":443,"id":"uuid","net":"tcp","ps":"n1"}`)) + "\n"
 	config := base64.StdEncoding.EncodeToString([]byte(body))
-	outList, tags, proxies, err := getSing([]byte(config), "example.com", false)
+	res, err := parseSubBody([]byte(config))
 	require.NoError(t, err)
-	assert.Nil(t, outList)
-	assert.Nil(t, tags)
-	require.Len(t, proxies, 1)
-	assert.Equal(t, "n1", proxies[0].Name)
-	assert.Equal(t, "vmess", proxies[0].Type)
+	assert.Nil(t, res.singNodes)
+	assert.Nil(t, res.singTags)
+	require.Len(t, res.proxies, 1)
+	assert.Equal(t, "n1", res.proxies[0].Name)
+	assert.Equal(t, "vmess", res.proxies[0].Type)
 }
 
-func TestGetSingEmptyContent(t *testing.T) {
-	_, _, _, err := getSing([]byte(""), "example.com", false)
+func TestParseSubBodyEmptyContent(t *testing.T) {
+	_, err := parseSubBody([]byte(""))
 	assert.Error(t, err)
 }
 

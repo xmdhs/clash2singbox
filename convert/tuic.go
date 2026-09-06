@@ -9,8 +9,7 @@ import (
 )
 
 func tuic(p *clash.Proxies, s *singbox.SingBoxOut, _ model.SingBoxVer) ([]singbox.SingBoxOut, error) {
-	p.Tls = true
-	tls(p, s)
+	tls(p, s, true)
 	s.UUID = p.Uuid
 	s.CongestionController = p.CongestionController
 	s.UdpRelayMode = p.UdpRelayMode

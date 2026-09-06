@@ -8,10 +8,9 @@ import (
 	"github.com/xmdhs/clash2singbox/model/singbox"
 )
 
-func anytls(p *clash.Proxies, s *singbox.SingBoxOut, v model.SingBoxVer) ([]singbox.SingBoxOut, error) {
-	p.Tls = true
-	tls(p, s)
-	s.TcpFastOpen = false
+func anytls(p *clash.Proxies, s *singbox.SingBoxOut, _ model.SingBoxVer) ([]singbox.SingBoxOut, error) {
+	tls(p, s, true)
+	s.TcpFastOpen = false // anytls 不支持 TCP Fast Open
 
 	if p.IdleSessionCheckInterval != 0 {
 		s.IdleSessionCheckInterval = strconv.Itoa(int(p.IdleSessionCheckInterval)) + "s"

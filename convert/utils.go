@@ -11,532 +11,309 @@ import (
 	"github.com/xmdhs/clash2singbox/model/singbox"
 )
 
-func filter(isinclude bool, reg string, sl []string) ([]string, error) {
-	// 纯字面模式走 strings.Contains 快路径，省掉 Compile + RE2 执行。无跨请求状态。
-	if isLiteralPattern(reg) {
-		return getForList(sl, func(v string) (string, bool) {
-			has := strings.Contains(v, reg)
-			if has && isinclude {
-				return v, true
-			}
-			if !isinclude && !has {
-				return v, true
-			}
-			return "", false
-		}), nil
-	}
-	r, err := regexp.Compile(reg)
-	if err != nil {
-		return sl, fmt.Errorf("filter: %w", err)
-	}
-	return getForList(sl, func(v string) (string, bool) {
-		has := r.MatchString(v)
-		if has && isinclude {
-			return v, true
-		}
-		if !isinclude && !has {
-			return v, true
-		}
-		return "", false
-	}), nil
-}
-
-// isLiteralPattern 报告模式是否不含正则元字符。
-func isLiteralPattern(s string) bool {
-	if s == "" {
-		return false
-	}
-	for i := 0; i < len(s); i++ {
-		switch s[i] {
-		case '.', '+', '*', '?', '(', ')', '|', '[', ']', '{', '}', '^', '$', '\\':
-			return false
-		}
-	}
-	return true
-}
-
-func getForList[K, V any](l []K, check func(K) (V, bool)) []V {
-	sl := make([]V, 0, len(l))
-	for _, v := range l {
-		s, ok := check(v)
-		if !ok {
-			continue
-		}
-		sl = append(sl, s)
-	}
-	return sl
-}
-
-// func getServers(s []singbox.SingBoxOut) []string {
-// 	m := map[string]struct{}{}
-// 	return getForList(s, func(v singbox.SingBoxOut) (string, bool) {
-// 		server := v.Server
-// 		_, has := m[server]
-// 		if server == "" || has {
-// 			return "", false
-// 		}
-// 		m[server] = struct{}{}
-// 		return server, true
-// 	})
-// }
-
-func getTags(s []singbox.SingBoxOut) []string {
-	return getForList(s, func(v singbox.SingBoxOut) (string, bool) {
-		tag := v.Tag
-		if tag == "" || v.Ignored || len(v.Visible) != 0 {
-			return "", false
-		}
-		return tag, true
-	})
-}
-
-func getEndpointTags(eps []*singbox.SingBoxEndpoint) []string {
-	return getForList(eps, func(v *singbox.SingBoxEndpoint) (string, bool) {
-		if v == nil || v.Tag == "" {
-			return "", false
-		}
-		return v.Tag, true
-	})
-}
-
-func buildTags(s []singbox.SingBoxOut, eps []*singbox.SingBoxEndpoint, extags []string) []string {
-	tags := getTags(s)
-	tags = append(tags, getEndpointTags(eps)...)
-	tags = append(tags, extags...)
-	return tags
-}
-
+// Patch 把转换结果写进 JSON 模板 b，返回缩进格式的完整配置（命令行版本使用）。
+// 模板自带的 outbounds 会保留，其中的 "{all}" 占位符与 filter 规则会被展开；
+// include / exclude 是默认 urltest 分组的节点过滤正则；extOut / extags 是订阅直接给出的 sing-box outbound 及其 tag。
 func Patch(b []byte, s []singbox.SingBoxOut, eps []*singbox.SingBoxEndpoint, include, exclude string, extOut []any, extags ...string) ([]byte, error) {
-	d, err := patchMap(b, s, eps, include, exclude, extOut, extags, true, true)
+	d, err := decodeTemplate(b)
 	if err != nil {
 		return nil, fmt.Errorf("Patch: %w", err)
 	}
-	bw := &bytes.Buffer{}
-	jw := json.NewEncoder(bw)
-	jw.SetIndent("", "    ")
-	// d 来自 json.Unmarshal，序列化不会失败
-	_ = jw.Encode(d)
-	return bw.Bytes(), nil
-}
-
-func ToInsecure(c *clash.Clash) {
-	for i := range c.Proxies {
-		p := c.Proxies[i]
-		p.SkipCertVerify = true
-		c.Proxies[i] = p
-	}
-}
-
-func patchMap(
-	tpl []byte,
-	s []singbox.SingBoxOut,
-	eps []*singbox.SingBoxEndpoint,
-	include, exclude string,
-	extOut []any,
-	extags []string,
-	urltestOut bool,
-	outFields bool,
-) (map[string]any, error) {
-	d := map[string]any{}
-	err := json.Unmarshal(tpl, &d)
+	err = patch(d, s, eps, extOut, extags, patchOptions{
+		include:      include,
+		exclude:      exclude,
+		urltest:      true,
+		keepTemplate: true,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("PatchMap: %w", err)
+		return nil, fmt.Errorf("Patch: %w", err)
 	}
-	tags := buildTags(s, eps, extags)
-
-	ftags := tags
-	if exclude != "" {
-		ftags, err = filter(false, exclude, ftags)
-		if err != nil {
-			return nil, fmt.Errorf("PatchMap: %w", err)
-		}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetIndent("", "    ")
+	if err := enc.Encode(d); err != nil {
+		return nil, fmt.Errorf("Patch: %w", err)
 	}
-	if include != "" {
-		ftags, err = filter(true, include, ftags)
-		if err != nil {
-			return nil, fmt.Errorf("PatchMap: %w", err)
-		}
-	}
-
-	anyList := make([]any, 0, len(s)+len(extOut)+5)
-
-	if urltestOut && len(ftags) > 0 {
-		anyList = append(anyList, singbox.SingBoxOut{
-			Type:      "selector",
-			Tag:       "select",
-			Outbounds: append([]string{"urltest"}, tags...),
-			Default:   "urltest",
-		})
-		anyList = append(anyList, singbox.SingBoxOut{
-			Type:      "urltest",
-			Tag:       "urltest",
-			Outbounds: ftags,
-		})
-	}
-
-	anyList = append(anyList, extOut...)
-	for _, v := range s {
-		anyList = append(anyList, v)
-	}
-
-	// 检查模板中是否已经存在这些特殊outbound，避免重复添加
-	templateTags := make(map[string]bool)
-	if outboundsRaw, exists := d["outbounds"]; exists {
-		if outboundsSlice, ok := outboundsRaw.([]any); ok {
-			for _, outbound := range outboundsSlice {
-				if outboundMap, ok := outbound.(map[string]any); ok {
-					if tag, exists := outboundMap["tag"]; exists {
-						if tagStr, ok := tag.(string); ok {
-							templateTags[tagStr] = true
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// 只有当模板中不存在时才添加默认的outbound
-	if !templateTags["direct"] {
-		anyList = append(anyList, singbox.SingBoxOut{
-			Type: "direct",
-			Tag:  "direct",
-		})
-	}
-
-	if outFields {
-		if !templateTags["block"] {
-			anyList = append(anyList, singbox.SingBoxOut{
-				Type: "block",
-				Tag:  "block",
-			})
-		}
-		// DNS 类型的 outbound 在 sing-box 1.11.0 中已被废弃，不再添加
-	}
-
-	// 处理模板中的outbounds，先替换{all}占位符，然后应用filter并移除filter字段
-	var templateOutbounds []any
-	if outboundsRaw, exists := d["outbounds"]; exists {
-		if outboundsSlice, ok := outboundsRaw.([]any); ok {
-			templateOutbounds = make([]any, len(outboundsSlice))
-
-			// 第一步：收集所有 urltest 节点及其 filter 信息
-			urltestFilters := make(map[string][]string) // tag -> filtered tags
-			for _, outbound := range outboundsSlice {
-				if outboundMap, ok := outbound.(map[string]any); ok {
-					if outboundType, hasType := outboundMap["type"].(string); hasType && outboundType == "urltest" {
-						if tag, hasTag := outboundMap["tag"].(string); hasTag {
-							if _, hasFilter := outboundMap["filter"]; hasFilter {
-								filteredTags := applyFilter(outbound, ftags)
-								urltestFilters[tag] = filteredTags
-							}
-						}
-					}
-				}
-			}
-
-			// 第二步：处理所有 outbound
-			for i, outbound := range outboundsSlice {
-				outboundMap, ok := outbound.(map[string]any)
-				if ok {
-					// 首先处理 {all} 占位符替换（无论是否有filter字段）
-					if outboundOutbounds, hasOutbounds := outboundMap["outbounds"]; hasOutbounds {
-						// 处理数组形式的outbounds
-						if outboundOutboundsSlice, ok := outboundOutbounds.([]any); ok {
-							needsReplacement := false
-							newOutbounds := make([]any, 0, len(outboundOutboundsSlice))
-
-							// 先收集所有非{all}的现有项
-							for _, item := range outboundOutboundsSlice {
-								if allStr, ok := item.(string); ok && allStr == "{all}" {
-									needsReplacement = true
-									// {all}会在后面处理
-								} else {
-									newOutbounds = append(newOutbounds, item)
-								}
-							}
-
-							// 如果需要替换{all}
-							if needsReplacement {
-								// 如果有filter字段，使用过滤后的标签，否则使用所有标签
-								tagsToUse := ftags
-								if _, hasFilter := outboundMap["filter"]; hasFilter {
-									filteredTags := applyFilter(outbound, ftags)
-									tagsToUse = filteredTags
-								}
-
-								// 将过滤后的标签添加到newOutbounds中
-								for _, tag := range tagsToUse {
-									newOutbounds = append(newOutbounds, tag)
-								}
-							}
-
-							// 特殊处理：如果这是一个 selector 类型且包含自动选择节点，需要追加对应的具体节点
-							if outboundType, hasType := outboundMap["type"].(string); hasType && outboundType == "selector" {
-								for _, item := range newOutbounds {
-									if itemStr, ok := item.(string); ok {
-										// 检查是否有对应的 urltest 节点
-										if filteredTags, exists := urltestFilters[itemStr]; exists {
-											// 追加对应的具体节点
-											for _, tag := range filteredTags {
-												newOutbounds = append(newOutbounds, tag)
-											}
-										}
-									}
-								}
-							}
-
-							if needsReplacement || len(newOutbounds) != len(outboundOutboundsSlice) {
-								outboundMap["outbounds"] = newOutbounds
-							}
-						} else if outboundOutboundsStr, ok := outboundOutbounds.(string); ok && outboundOutboundsStr == "{all}" {
-							// 处理字符串形式的{all}
-							tagsToUse := ftags
-							if _, hasFilter := outboundMap["filter"]; hasFilter {
-								filteredTags := applyFilter(outbound, ftags)
-								tagsToUse = filteredTags
-							}
-
-							// 将字符串形式的{all}替换为标签数组
-							stringTags := make([]any, len(tagsToUse))
-							for i, tag := range tagsToUse {
-								stringTags[i] = tag
-							}
-							outboundMap["outbounds"] = stringTags
-						}
-					}
-				}
-
-				// 移除filter字段
-				templateOutbounds[i] = removeFilterField(outbound)
-			}
-		}
-	}
-
-	// 将模板outbounds和生成的outbounds合并
-	finalOutbounds := append(templateOutbounds, anyList...)
-	d["outbounds"] = finalOutbounds
-
-	// 将 WireGuard endpoints 写入顶层 "endpoints" 数组
-	if len(eps) > 0 {
-		var existingEndpoints []any
-		if raw, exists := d["endpoints"]; exists {
-			if sl, ok := raw.([]any); ok {
-				existingEndpoints = sl
-			}
-		}
-		for _, ep := range eps {
-			existingEndpoints = append(existingEndpoints, ep)
-		}
-		d["endpoints"] = existingEndpoints
-	}
-
-	return d, nil
+	return buf.Bytes(), nil
 }
 
-func PatchMap(
-	tpl []byte,
-	s []singbox.SingBoxOut,
-	eps []*singbox.SingBoxEndpoint,
-	include, exclude string,
-	extOut []any,
-	extags []string,
-	urltestOut bool,
-	outFields bool,
-) (map[string]any, error) {
-	d := map[string]any{}
-	err := json.Unmarshal(tpl, &d)
+// PatchMap 与 PatchMapFromMap 相同，但接受尚未解码的 JSON 模板。
+func PatchMap(tpl []byte, s []singbox.SingBoxOut, eps []*singbox.SingBoxEndpoint, include, exclude string, extOut []any, extags []string, urltestOut bool, outFields bool) (map[string]any, error) {
+	d, err := decodeTemplate(tpl)
 	if err != nil {
 		return nil, fmt.Errorf("PatchMap: %w", err)
 	}
 	return PatchMapFromMap(d, s, eps, include, exclude, extOut, extags, urltestOut, outFields)
 }
 
-// PatchMapFromMap patches a configuration that has already been decoded by
-// the caller. The map belongs to the current conversion and may be mutated.
-func PatchMapFromMap(
-	d map[string]any,
-	s []singbox.SingBoxOut,
-	eps []*singbox.SingBoxEndpoint,
-	include, exclude string,
-	extOut []any,
-	extags []string,
-	urltestOut bool,
-	outFields bool,
-) (map[string]any, error) {
+// PatchMapFromMap 把转换结果写进已解码的模板 d 并返回它（d 会被就地修改）。
+// 模板原有的 outbounds 会被整体替换，需要保留的模板节点应由调用方通过 extOut / extags 传入（clash2sfa 的做法）。
+// urltestOut 控制是否生成默认的 select / urltest 分组；
+// outFields 控制是否补上 block 与 dns-out 这两个 sing-box 1.11 起废弃的 outbound，只有面向旧版本的模板需要。
+func PatchMapFromMap(d map[string]any, s []singbox.SingBoxOut, eps []*singbox.SingBoxEndpoint, include, exclude string, extOut []any, extags []string, urltestOut bool, outFields bool) (map[string]any, error) {
 	if d == nil {
 		return nil, fmt.Errorf("PatchMap: 配置必须是 JSON 对象")
 	}
-	var err error
-	tags := buildTags(s, eps, extags)
-
-	ftags := tags
-	if include != "" {
-		ftags, err = filter(true, include, ftags)
-		if err != nil {
-			return nil, fmt.Errorf("PatchMap: %w", err)
-		}
-	}
-	if exclude != "" {
-		ftags, err = filter(false, exclude, ftags)
-		if err != nil {
-			return nil, fmt.Errorf("PatchMap: %w", err)
-		}
-	}
-
-	anyList := make([]any, 0, len(s)+len(extOut)+5)
-
-	if urltestOut {
-		selOutbounds := make([]string, 0, len(tags)+1)
-		selOutbounds = append(selOutbounds, "urltest")
-		selOutbounds = append(selOutbounds, tags...)
-		anyList = append(anyList, singbox.SingBoxOut{
-			Type:      "selector",
-			Tag:       "select",
-			Outbounds: selOutbounds,
-			Default:   "urltest",
-		})
-		anyList = append(anyList, singbox.SingBoxOut{
-			Type:      "urltest",
-			Tag:       "urltest",
-			Outbounds: ftags,
-		})
-	}
-
-	anyList = append(anyList, extOut...)
-	for _, v := range s {
-		anyList = append(anyList, v)
-	}
-
-	anyList = append(anyList, singbox.SingBoxOut{
-		Type: "direct",
-		Tag:  "direct",
+	err := patch(d, s, eps, extOut, extags, patchOptions{
+		include:   include,
+		exclude:   exclude,
+		urltest:   urltestOut,
+		legacyOut: outFields,
 	})
-
-	if outFields {
-		anyList = append(anyList, singbox.SingBoxOut{
-			Type: "block",
-			Tag:  "block",
-		})
-		anyList = append(anyList, singbox.SingBoxOut{
-			Type: "dns",
-			Tag:  "dns-out",
-		})
+	if err != nil {
+		return nil, fmt.Errorf("PatchMap: %w", err)
 	}
-
-	d["outbounds"] = anyList
-
-	if len(eps) > 0 {
-		var existingEndpoints []any
-		if raw, exists := d["endpoints"]; exists {
-			if sl, ok := raw.([]any); ok {
-				existingEndpoints = sl
-			}
-		}
-		for _, ep := range eps {
-			existingEndpoints = append(existingEndpoints, ep)
-		}
-		d["endpoints"] = existingEndpoints
-	}
-
 	return d, nil
 }
 
-// applyFilter 应用过滤规则到节点列表
-func applyFilter(outbound any, allTags []string) []string {
-	// 将any转换为map[string]any进行处理
-	outboundMap, ok := outbound.(map[string]any)
-	if !ok {
-		return allTags
+// ToInsecure 让所有节点跳过证书校验。
+func ToInsecure(c *clash.Clash) {
+	for i := range c.Proxies {
+		c.Proxies[i].SkipCertVerify = true
+	}
+}
+
+func decodeTemplate(tpl []byte) (map[string]any, error) {
+	var d map[string]any
+	if err := json.Unmarshal(tpl, &d); err != nil {
+		return nil, err
+	}
+	if d == nil {
+		return nil, fmt.Errorf("配置必须是 JSON 对象")
+	}
+	return d, nil
+}
+
+// patchOptions 控制 patch 生成哪些内容。
+type patchOptions struct {
+	include, exclude string // 默认 urltest 分组的节点过滤正则，先 include 再 exclude
+	urltest          bool   // 生成默认的 select / urltest 分组
+	legacyOut        bool   // 补上 block 与 dns-out
+	keepTemplate     bool   // 保留模板原有 outbounds，并展开其中的 {all} 占位符与 filter 规则
+}
+
+// patch 把节点 s、endpoint eps 与外部 outbound extOut 合并进模板 d 的 outbounds / endpoints。
+func patch(d map[string]any, s []singbox.SingBoxOut, eps []*singbox.SingBoxEndpoint, extOut []any, extags []string, opt patchOptions) error {
+	tags := collectTags(s, eps, extags)
+	ftags, err := applyIncludeExclude(tags, opt.include, opt.exclude)
+	if err != nil {
+		return err
 	}
 
-	// 检查是否有filter字段
-	filterRaw, hasFilter := outboundMap["filter"]
-	if !hasFilter {
-		return allTags
+	var outbounds []any
+	if opt.keepTemplate {
+		tpl, _ := d["outbounds"].([]any)
+		outbounds = expandTemplateOutbounds(tpl, ftags)
 	}
-
-	// 解析filter规则
-	filterRules, ok := filterRaw.([]any)
-	if !ok {
-		return allTags
+	if opt.urltest && len(ftags) > 0 {
+		outbounds = append(outbounds,
+			singbox.SingBoxOut{Type: "selector", Tag: "select", Outbounds: append([]string{"urltest"}, tags...), Default: "urltest"},
+			singbox.SingBoxOut{Type: "urltest", Tag: "urltest", Outbounds: ftags},
+		)
 	}
+	outbounds = append(outbounds, extOut...)
+	for _, v := range s {
+		outbounds = append(outbounds, v)
+	}
+	outbounds = appendIfMissing(outbounds, singbox.SingBoxOut{Type: "direct", Tag: "direct"})
+	if opt.legacyOut {
+		outbounds = appendIfMissing(outbounds, singbox.SingBoxOut{Type: "block", Tag: "block"})
+		outbounds = appendIfMissing(outbounds, singbox.SingBoxOut{Type: "dns", Tag: "dns-out"})
+	}
+	d["outbounds"] = outbounds
 
-	filteredTags := allTags
+	if len(eps) > 0 {
+		existing, _ := d["endpoints"].([]any)
+		for _, ep := range eps {
+			existing = append(existing, ep)
+		}
+		d["endpoints"] = existing
+	}
+	return nil
+}
 
-	// 应用每个filter规则
-	for _, ruleRaw := range filterRules {
-		ruleMap, ok := ruleRaw.(map[string]any)
+// collectTags 返回可供 select / urltest 引用的全部 tag：普通节点、endpoint 与外部 tag。
+func collectTags(s []singbox.SingBoxOut, eps []*singbox.SingBoxEndpoint, extags []string) []string {
+	tags := getTags(s)
+	for _, ep := range eps {
+		if ep != nil && ep.Tag != "" {
+			tags = append(tags, ep.Tag)
+		}
+	}
+	return append(tags, extags...)
+}
+
+// getTags 返回可被分组引用的节点 tag：跳过只作 detour 的内部节点（Ignored）与只在特定分组可见的节点（Visible）。
+func getTags(s []singbox.SingBoxOut) []string {
+	tags := make([]string, 0, len(s))
+	for _, v := range s {
+		if v.Tag != "" && !v.Ignored && len(v.Visible) == 0 {
+			tags = append(tags, v.Tag)
+		}
+	}
+	return tags
+}
+
+// applyIncludeExclude 先按 include 保留匹配的 tag，再按 exclude 剔除匹配的 tag；空正则表示不过滤。
+func applyIncludeExclude(tags []string, include, exclude string) ([]string, error) {
+	var err error
+	if include != "" {
+		if tags, err = filterByRegexp(tags, include, true); err != nil {
+			return nil, err
+		}
+	}
+	if exclude != "" {
+		if tags, err = filterByRegexp(tags, exclude, false); err != nil {
+			return nil, err
+		}
+	}
+	return tags, nil
+}
+
+// filterByRegexp 用正则筛选 tags：keepMatch 为 true 保留匹配项，否则保留不匹配项。
+func filterByRegexp(tags []string, reg string, keepMatch bool) ([]string, error) {
+	re, err := regexp.Compile(reg)
+	if err != nil {
+		return nil, fmt.Errorf("filter: %w", err)
+	}
+	return filterFunc(tags, func(tag string) bool { return re.MatchString(tag) == keepMatch }), nil
+}
+
+func filterFunc(tags []string, keep func(string) bool) []string {
+	out := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		if keep(tag) {
+			out = append(out, tag)
+		}
+	}
+	return out
+}
+
+// appendIfMissing 在列表里没有同 tag 的 outbound 时追加 o，避免与模板自带的 direct / block 重复。
+func appendIfMissing(outbounds []any, o singbox.SingBoxOut) []any {
+	for _, item := range outbounds {
+		if outboundTag(item) == o.Tag {
+			return outbounds
+		}
+	}
+	return append(outbounds, o)
+}
+
+// outboundTag 取 outbound 的 tag；outbound 可能是模板解码出的 map，也可能是转换生成的结构体。
+func outboundTag(item any) string {
+	switch v := item.(type) {
+	case map[string]any:
+		tag, _ := v["tag"].(string)
+		return tag
+	case singbox.SingBoxOut:
+		return v.Tag
+	}
+	return ""
+}
+
+// expandTemplateOutbounds 处理模板自带的 outbounds：
+//   - outbounds 字段里的 "{all}" 占位符替换为全部节点 tag，该 outbound 带 filter 规则时先过滤；
+//   - selector 引用了带 filter 的 urltest 时，把该 urltest 过滤出的节点一并追加进 selector，方便手动选择；
+//   - 移除 sing-box 不识别的 filter 字段。
+func expandTemplateOutbounds(outbounds []any, ftags []string) []any {
+	urltestTags := filteredUrltestTags(outbounds, ftags)
+	for _, item := range outbounds {
+		ob, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
-
-		actionRaw, hasAction := ruleMap["action"]
-		keywordsRaw, hasKeywords := ruleMap["keywords"]
-		if !hasAction || !hasKeywords {
-			continue
-		}
-
-		action, ok := actionRaw.(string)
-		if !ok {
-			continue
-		}
-
-		keywords, ok := keywordsRaw.(string)
-		if !ok {
-			continue
-		}
-
-		// 改进正则表达式构建 - 转义特殊字符并正确处理分隔符
-		keywordParts := strings.Split(keywords, "|")
-		var escapedParts []string
-		for _, part := range keywordParts {
-			// 转义正则表达式特殊字符，但保留原有的意图
-			escapedPart := regexp.QuoteMeta(part)
-			// 如果原来就是正则表达式，去掉不必要的转义
-			if strings.Contains(part, "\\") {
-				escapedPart = part
+		switch list := ob["outbounds"].(type) {
+		case []any:
+			ob["outbounds"] = expandAllPlaceholder(list, ob, ftags, urltestTags)
+		case string:
+			if list == "{all}" {
+				ob["outbounds"] = toAnyList(applyFilter(ob, ftags))
 			}
-			escapedParts = append(escapedParts, escapedPart)
 		}
-		pattern := strings.Join(escapedParts, "|")
+		delete(ob, "filter")
+	}
+	return outbounds
+}
 
-		r, err := regexp.Compile(pattern)
+// filteredUrltestTags 收集模板中带 filter 规则的 urltest：tag -> 过滤后的节点 tag。
+func filteredUrltestTags(outbounds []any, ftags []string) map[string][]string {
+	result := map[string][]string{}
+	for _, item := range outbounds {
+		ob, ok := item.(map[string]any)
+		if !ok || ob["type"] != "urltest" {
+			continue
+		}
+		tag, ok := ob["tag"].(string)
+		if _, hasFilter := ob["filter"]; ok && hasFilter {
+			result[tag] = applyFilter(ob, ftags)
+		}
+	}
+	return result
+}
+
+// expandAllPlaceholder 把 list 中的 "{all}" 替换为（按 ob 的 filter 规则过滤后的）节点 tag；
+// ob 是 selector 且引用了带 filter 的 urltest 时，再追加那些 urltest 的节点。
+func expandAllPlaceholder(list []any, ob map[string]any, ftags []string, urltestTags map[string][]string) []any {
+	out := make([]any, 0, len(list)+len(ftags))
+	hasAll := false
+	for _, item := range list {
+		if item == "{all}" {
+			hasAll = true
+			continue
+		}
+		out = append(out, item)
+	}
+	if hasAll {
+		out = append(out, toAnyList(applyFilter(ob, ftags))...)
+	}
+	if ob["type"] == "selector" {
+		for _, item := range out {
+			if tag, ok := item.(string); ok {
+				out = append(out, toAnyList(urltestTags[tag])...)
+			}
+		}
+	}
+	return out
+}
+
+func toAnyList(tags []string) []any {
+	out := make([]any, len(tags))
+	for i, tag := range tags {
+		out[i] = tag
+	}
+	return out
+}
+
+// applyFilter 依次应用 outbound 上 filter 字段里的规则，返回过滤后的 tag。规则形如
+// {"action": "include" | "exclude", "keywords": "关键词1|关键词2"}。
+func applyFilter(ob map[string]any, tags []string) []string {
+	rules, _ := ob["filter"].([]any)
+	for _, raw := range rules {
+		rule, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		action, _ := rule["action"].(string)
+		keywords, ok := rule["keywords"].(string)
+		if !ok || (action != "include" && action != "exclude") {
+			continue
+		}
+		re, err := regexp.Compile(keywordsPattern(keywords))
 		if err != nil {
 			continue
 		}
-
-		// 根据action应用过滤
-		switch action {
-		case "include":
-			filteredTags = getForList(filteredTags, func(tag string) (string, bool) {
-				matches := r.MatchString(tag)
-				if matches {
-					return tag, true
-				}
-				return "", false
-			})
-		case "exclude":
-			filteredTags = getForList(filteredTags, func(tag string) (string, bool) {
-				matches := r.MatchString(tag)
-				if !matches {
-					return tag, true
-				}
-				return "", false
-			})
-		}
+		tags = filterFunc(tags, func(tag string) bool { return re.MatchString(tag) == (action == "include") })
 	}
-
-	return filteredTags
+	return tags
 }
 
-// removeFilterField 从outbound配置中移除filter字段
-func removeFilterField(outbound any) any {
-	outboundMap, ok := outbound.(map[string]any)
-	if !ok {
-		return outbound
+// keywordsPattern 把 "a|b|c" 形式的关键词拼成正则：不含反斜杠的部分按字面量转义，含反斜杠的视为用户写好的正则原样使用。
+func keywordsPattern(keywords string) string {
+	parts := strings.Split(keywords, "|")
+	for i, part := range parts {
+		if !strings.Contains(part, `\`) {
+			parts[i] = regexp.QuoteMeta(part)
+		}
 	}
-
-	// 删除filter字段
-	delete(outboundMap, "filter")
-	return outboundMap
+	return strings.Join(parts, "|")
 }

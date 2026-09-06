@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"cmp"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -11,29 +12,30 @@ import (
 	"github.com/xmdhs/clash2singbox/model/clash"
 )
 
+// ParseURL 把节点分享链接解析为 Clash 节点。
+// 支持 ss、vmess、vless、trojan、hysteria、hy2 / hysteria2、tuic、socks5、http / https、anytls。
 func ParseURL(s string) (clash.Proxies, error) {
 	s = strings.TrimSpace(s)
 	u, err := url.Parse(s)
 	if err != nil {
 		return clash.Proxies{}, err
 	}
-	return parseURLFromURL(u, s)
+	return parseURL(u, s)
 }
 
-// ParseURLFromURL 复用已解析的 *url.URL，避免调用方与 ParseURL 双重 url.Parse。
-// raw 仅用于 vmess 分支（需原始串做 TrimPrefix+base64）与错误信息。
+// ParseURLFromURL 与 ParseURL 相同，但接受调用方已经解析好的 *url.URL；raw 是原始链接文本。保留以兼容旧调用方。
 func ParseURLFromURL(u *url.URL, raw string) (clash.Proxies, error) {
-	return parseURLFromURL(u, strings.TrimSpace(raw))
+	return parseURL(u, strings.TrimSpace(raw))
 }
 
-func parseURLFromURL(u *url.URL, s string) (clash.Proxies, error) {
+func parseURL(u *url.URL, raw string) (clash.Proxies, error) {
 	var p clash.Proxies
 	var err error
 	switch u.Scheme {
 	case "ss":
 		p, err = parseSs(u)
 	case "vmess":
-		p, err = parseVmess(s)
+		p, err = parseVmess(raw)
 	case "vless":
 		p, err = parseVless(u)
 	case "trojan":
@@ -54,484 +56,306 @@ func parseURLFromURL(u *url.URL, s string) (clash.Proxies, error) {
 		return clash.Proxies{}, fmt.Errorf("unsupported protocol: %s", u.Scheme)
 	}
 	if err != nil {
-		return clash.Proxies{}, fmt.Errorf("%s: %w", s, err)
+		return clash.Proxies{}, fmt.Errorf("%s: %w", raw, err)
 	}
 	return p, nil
 }
 
+// baseProxy 用链接里各协议共有的部分（#name、host、port）初始化节点。
+func baseProxy(u *url.URL, typ string) clash.Proxies {
+	return clash.Proxies{Type: typ, Name: u.Fragment, Server: u.Hostname(), Port: u.Port()}
+}
+
+// userPass 返回链接 userinfo 里的用户名与密码，缺省为空。
+func userPass(u *url.URL) (string, string) {
+	pass, _ := u.User.Password()
+	return u.User.Username(), pass
+}
+
+// queryBool 报告布尔查询参数是否为真（"1" 或 "true"，忽略大小写）。
+func queryBool(q url.Values, key string) clash.MyBool {
+	v := q.Get(key)
+	return clash.MyBool(v == "1" || strings.EqualFold(v, "true"))
+}
+
+// queryInt 解析整数查询参数，缺失或非法时为 0。
+func queryInt(q url.Values, key string) clash.MyInt {
+	n, _ := strconv.Atoi(q.Get(key))
+	return clash.MyInt(n)
+}
+
+// queryList 解析逗号分隔的列表参数（如 alpn），缺失时为 nil。
+func queryList(q url.Values, key string) []string {
+	return splitComma(q.Get(key))
+}
+
+func splitComma(s string) []string {
+	if s == "" {
+		return nil
+	}
+	return strings.Split(s, ",")
+}
+
 func parseHttp(u *url.URL) (clash.Proxies, error) {
-	p := clash.Proxies{
-		Name:   u.Fragment,
-		Type:   "http",
-		Server: u.Hostname(),
-		Port:   u.Port(),
-	}
-	if u.User != nil {
-		p.Username = u.User.Username()
-		pass, ok := u.User.Password()
-		if ok {
-			p.Password = pass
-		}
-	}
-	if u.Scheme == "https" {
-		p.Tls = clash.MyBool(true)
-	}
+	p := baseProxy(u, "http")
+	p.Username, p.Password = userPass(u)
+	p.Tls = u.Scheme == "https"
 	return p, nil
 }
 
 func parseSocks5(u *url.URL) (clash.Proxies, error) {
-	p := clash.Proxies{
-		Name:   u.Fragment,
-		Type:   "socks5",
-		Server: u.Hostname(),
-		Port:   u.Port(),
-	}
-	if u.User != nil {
-		p.Username = u.User.Username()
-		pass, ok := u.User.Password()
-		if ok {
-			p.Password = pass
-		}
-	}
+	p := baseProxy(u, "socks5")
+	p.Username, p.Password = userPass(u)
 	return p, nil
 }
 
 func parseTuic(u *url.URL) (clash.Proxies, error) {
-	p := clash.Proxies{
-		Name:   u.Fragment,
-		Type:   "tuic",
-		Server: u.Hostname(),
-		Port:   u.Port(),
-	}
-	if u.User != nil {
-		p.Uuid = u.User.Username()
-		if password, ok := u.User.Password(); ok {
-			p.Password = password
-		}
-	}
+	p := baseProxy(u, "tuic")
+	p.Uuid, p.Password = userPass(u)
 	q := u.Query()
-	if sni, ok := q["sni"]; ok {
-		p.Sni = sni[0]
-	}
-	if alpn, ok := q["alpn"]; ok {
-		p.Alpn = strings.Split(alpn[0], ",")
-	}
-	if scv, ok := q["skip-cert-verify"]; ok && len(scv) > 0 && (scv[0] == "true" || scv[0] == "1") {
-		p.SkipCertVerify = clash.MyBool(true)
-	}
-	if ds, ok := q["disable-sni"]; ok && len(ds) > 0 && (ds[0] == "true" || ds[0] == "1") {
-		p.DisableSni = clash.MyBool(true)
-	}
-	if cr, ok := q["congestion-controller"]; ok {
-		p.CongestionController = cr[0]
-	}
-	if um, ok := q["udp-relay-mode"]; ok {
-		p.UdpRelayMode = um[0]
-	}
-	if rr, ok := q["reduce-rtt"]; ok && len(rr) > 0 && (rr[0] == "true" || rr[0] == "1") {
-		p.ReduceRtt = clash.MyBool(true)
-	}
-	if hi, ok := q["heartbeat-interval"]; ok {
-		i, err := strconv.Atoi(hi[0])
-		if err == nil {
-			p.HeartbeatInterval = clash.MyInt(i)
-		}
-	}
-	if uos, ok := q["udp-over-stream"]; ok && len(uos) > 0 && (uos[0] == "true" || uos[0] == "1") {
-		p.UdpOverStream = clash.MyBool(true)
-	}
-	if uosv, ok := q["udp-over-stream-version"]; ok {
-		i, err := strconv.Atoi(uosv[0])
-		if err == nil {
-			p.UdpOverStreamVersion = clash.MyInt(i)
-		}
-	}
+	p.Sni = q.Get("sni")
+	p.Alpn = queryList(q, "alpn")
+	p.SkipCertVerify = queryBool(q, "skip-cert-verify")
+	p.DisableSni = queryBool(q, "disable-sni")
+	p.CongestionController = q.Get("congestion-controller")
+	p.UdpRelayMode = q.Get("udp-relay-mode")
+	p.ReduceRtt = queryBool(q, "reduce-rtt")
+	p.HeartbeatInterval = queryInt(q, "heartbeat-interval")
+	p.UdpOverStream = queryBool(q, "udp-over-stream")
+	p.UdpOverStreamVersion = queryInt(q, "udp-over-stream-version")
 	return p, nil
 }
 
 func parseHysteria2(u *url.URL) (clash.Proxies, error) {
-	p := clash.Proxies{
-		Name:     u.Fragment,
-		Type:     "hysteria2",
-		Server:   u.Hostname(),
-		Port:     u.Port(),
-		Password: u.User.Username(),
-	}
+	p := baseProxy(u, "hysteria2")
+	p.Password = u.User.Username()
 	q := u.Query()
-	if scv, ok := q["insecure"]; ok && len(scv) > 0 && scv[0] == "1" {
-		p.SkipCertVerify = clash.MyBool(true)
-	}
-	if sni, ok := q["sni"]; ok {
-		p.Sni = sni[0]
-	}
-	if obfs, ok := q["obfs"]; ok {
-		p.Obfs = obfs[0]
-	}
-	if op, ok := q["obfs-password"]; ok {
-		p.ObfsPassword = op[0]
-	}
-	if mport, ok := q["mport"]; ok {
-		p.Ports = mport[0]
-	}
+	p.SkipCertVerify = queryBool(q, "insecure")
+	p.Sni = q.Get("sni")
+	p.Obfs = q.Get("obfs")
+	p.ObfsPassword = q.Get("obfs-password")
+	p.Ports = q.Get("mport")
 	return p, nil
 }
 
 func parseHysteria(u *url.URL) (clash.Proxies, error) {
-	p := clash.Proxies{
-		Name:   u.Fragment,
-		Type:   "hysteria",
-		Server: u.Hostname(),
-		Port:   u.Port(),
-	}
+	p := baseProxy(u, "hysteria")
 	q := u.Query()
-	if alpn, ok := q["alpn"]; ok {
-		p.Alpn = strings.Split(alpn[0], ",")
-	}
-	if scv, ok := q["insecure"]; ok && len(scv) > 0 && (scv[0] == "1" || scv[0] == "true") {
-		p.SkipCertVerify = clash.MyBool(true)
-	}
-	if auth, ok := q["auth"]; ok {
-		p.AuthStr = auth[0]
-	}
-	if ports, ok := q["mport"]; ok {
-		p.Ports = ports[0]
-	}
-	if op, ok := q["obfsParam"]; ok {
-		p.Obfs = op[0]
-	}
-	if up, ok := q["upmbps"]; ok {
-		p.Up = up[0]
-	}
-	if down, ok := q["downmbps"]; ok {
-		p.Down = down[0]
-	}
-	if obfs, ok := q["obfs"]; ok {
-		p.Obfs = obfs[0]
-	}
-	if fo, ok := q["fast-open"]; ok && len(fo) > 0 && (fo[0] == "1" || fo[0] == "true") {
-		p.FastOpen = clash.MyBool(true)
-	}
-	if rwc, ok := q["recv-window-conn"]; ok {
-		i, err := strconv.Atoi(rwc[0])
-		if err == nil {
-			p.RecvWindowConn = clash.MyInt(i)
-		}
-	}
-	if rw, ok := q["recv-window"]; ok {
-		i, err := strconv.Atoi(rw[0])
-		if err == nil {
-			p.RecvWindow = clash.MyInt(i)
-		}
-	}
-	if dmd, ok := q["disable-mtu-discovery"]; ok && len(dmd) > 0 && (dmd[0] == "1" || dmd[0] == "true") {
-		p.DisableMtuDiscovery = clash.MyBool(true)
-	}
-	if fp, ok := q["fingerprint"]; ok {
-		p.Fingerprint = fp[0]
-	}
-	if protocol, ok := q["protocol"]; ok {
-		p.Protocol = protocol[0]
-	}
-	if sni, ok := q["sni"]; ok {
-		p.Sni = sni[0]
-	}
-
+	p.Alpn = queryList(q, "alpn")
+	p.SkipCertVerify = queryBool(q, "insecure")
+	p.AuthStr = q.Get("auth")
+	p.Ports = q.Get("mport")
+	p.Obfs = cmp.Or(q.Get("obfs"), q.Get("obfsParam"))
+	p.Up = q.Get("upmbps")
+	p.Down = q.Get("downmbps")
+	p.FastOpen = queryBool(q, "fast-open")
+	p.RecvWindowConn = queryInt(q, "recv-window-conn")
+	p.RecvWindow = queryInt(q, "recv-window")
+	p.DisableMtuDiscovery = queryBool(q, "disable-mtu-discovery")
+	p.Fingerprint = q.Get("fingerprint")
+	p.Protocol = q.Get("protocol")
+	p.Sni = q.Get("sni")
 	return p, nil
 }
 
 func parseTrojan(u *url.URL) (clash.Proxies, error) {
-	p := clash.Proxies{
-		Type:   "trojan",
-		Name:   u.Fragment,
-		Server: u.Hostname(),
-		Port:   u.Port(),
-	}
-	if u.User != nil {
-		p.Password = u.User.Username()
-	}
-
+	p := baseProxy(u, "trojan")
+	p.Password = u.User.Username()
 	q := u.Query()
-	if t, ok := q["type"]; ok {
-		p.Network = t[0]
+	p.Network = q.Get("type")
+	if host := q.Get("host"); host != "" {
+		p.WsOpts.Headers = map[string]string{"Host": host}
 	}
-	if host, ok := q["host"]; ok {
-		p.WsOpts.Headers = map[string]string{
-			"Host": host[0],
-		}
-	}
-	if path, ok := q["path"]; ok {
-		p.WsOpts.Path = path[0]
-	}
-	if alpn, ok := q["alpn"]; ok {
-		p.Alpn = strings.Split(alpn[0], ",")
-	}
-	if sni, ok := q["sni"]; ok {
-		p.Sni = sni[0]
-	}
-	if scv, ok := q["skip-cert-verify"]; ok && len(scv) > 0 && (scv[0] == "1" || scv[0] == "true") {
-		p.SkipCertVerify = clash.MyBool(true)
-	}
-	if fp, ok := q["fingerprint"]; ok {
-		p.ClientFingerprint = fp[0]
-	}
-	if fp, ok := q["fp"]; ok {
-		p.ClientFingerprint = fp[0]
-	}
-	if cfp, ok := q["client-fingerprint"]; ok {
-		p.ClientFingerprint = cfp[0]
-	}
-	if allowInsecure, ok := q["allowInsecure"]; ok && len(allowInsecure) > 0 && (allowInsecure[0] == "1" || allowInsecure[0] == "true") {
-		p.SkipCertVerify = clash.MyBool(true)
-	}
+	p.WsOpts.Path = q.Get("path")
+	p.Alpn = queryList(q, "alpn")
+	p.Sni = q.Get("sni")
+	p.SkipCertVerify = queryBool(q, "skip-cert-verify") || queryBool(q, "allowInsecure")
+	p.ClientFingerprint = cmp.Or(q.Get("client-fingerprint"), q.Get("fp"), q.Get("fingerprint"))
 	return p, nil
 }
 
 func parseVless(u *url.URL) (clash.Proxies, error) {
-	p := clash.Proxies{
-		Type:   "vless",
-		Name:   u.Fragment,
-		Server: u.Hostname(),
-		Port:   u.Port(),
-		Uuid:   u.User.String(),
-	}
+	p := baseProxy(u, "vless")
+	p.Uuid = u.User.String()
 	q := u.Query()
-	if security, ok := q["security"]; ok && len(security) > 0 && security[0] != "none" {
-		p.Tls = clash.MyBool(true)
-		if security[0] == "reality" {
+	if security := q.Get("security"); security != "" && security != "none" {
+		p.Tls = true
+		if security == "reality" {
 			p.RealityOpts.PublicKey = q.Get("pbk")
 			p.RealityOpts.ShortId = q.Get("sid")
 		}
 	}
-
-	p.Servername = q.Get("sni")
-	if p.Servername == "" {
-		p.Servername = q.Get("peer")
-	}
+	p.Servername = cmp.Or(q.Get("sni"), q.Get("peer"))
 	p.Flow = q.Get("flow")
 	p.ClientFingerprint = q.Get("fp")
-	if alpn, ok := q["alpn"]; ok {
-		p.Alpn = strings.Split(alpn[0], ",")
-	}
-	if scv, ok := q["allowinsecure"]; ok && len(scv) > 0 && (scv[0] == "1" || strings.ToLower(scv[0]) == "true") {
-		p.SkipCertVerify = clash.MyBool(true)
-	}
+	p.Alpn = queryList(q, "alpn")
+	p.SkipCertVerify = queryBool(q, "allowinsecure")
 	p.Network = q.Get("type")
 
+	host := cmp.Or(q.Get("host"), q.Get("obfsparam"))
+	path := q.Get("path")
 	switch p.Network {
-	case "ws", "http", "grpc", "h2":
-		host := q.Get("host")
-		if host == "" {
-			host = q.Get("obfsparam")
+	case "ws":
+		p.WsOpts.Path = path
+		if host != "" {
+			p.WsOpts.Headers = map[string]string{"Host": host}
 		}
-		path := q.Get("path")
-		switch p.Network {
-		case "ws":
-			p.WsOpts.Path = path
-			if host != "" {
-				p.WsOpts.Headers = map[string]string{
-					"Host": host,
-				}
-			}
-			if q.Get("headerType") == "http" {
-				p.WsOpts.V2rayHttpUpgrade = clash.MyBool(true)
-			}
-		case "http":
-			p.HTTPOpts.Path = []string{path}
-			if host != "" {
-				p.HTTPOpts.Headers = map[string][]string{
-					"Host": {host},
-				}
-			}
-		case "h2":
-			p.H2Opts.Path = path
-			if host != "" {
-				p.H2Opts.Host = []string{host}
-			}
-		case "grpc":
-			p.GrpcOpts.GrpcServiceName = path
+		p.WsOpts.V2rayHttpUpgrade = q.Get("headerType") == "http"
+	case "http":
+		p.HTTPOpts.Path = []string{path}
+		if host != "" {
+			p.HTTPOpts.Headers = map[string][]string{"Host": {host}}
 		}
+	case "h2":
+		p.H2Opts.Path = path
+		if host != "" {
+			p.H2Opts.Host = []string{host}
+		}
+	case "grpc":
+		p.GrpcOpts.GrpcServiceName = path
 	}
+	// 开了 TLS 但没给 sni 时，用传输层的 Host 兜底
 	if p.Tls && p.Servername == "" {
-		if host, ok := p.WsOpts.Headers["Host"]; ok {
-			p.Servername = host
-		} else if len(p.HTTPOpts.Headers["Host"]) > 0 {
+		p.Servername = p.WsOpts.Headers["Host"]
+		if p.Servername == "" && len(p.HTTPOpts.Headers["Host"]) > 0 {
 			p.Servername = p.HTTPOpts.Headers["Host"][0]
 		}
 	}
-
 	return p, nil
 }
 
-func parseVmess(s string) (clash.Proxies, error) {
-	s = strings.TrimPrefix(s, "vmess://")
-	b, err := base64.StdEncoding.DecodeString(s)
+func parseVmess(raw string) (clash.Proxies, error) {
+	b, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(raw, "vmess://"))
 	if err != nil {
 		return clash.Proxies{}, err
 	}
-	v := struct {
+	var v struct {
 		Ps   string `json:"ps"`
 		Add  string `json:"add"`
-		Port any    `json:"port"`
+		Port any    `json:"port"` // 数字或字符串
 		Id   string `json:"id"`
-		Aid  any    `json:"aid"`
+		Aid  any    `json:"aid"` // 数字或字符串
 		Scy  string `json:"scy"`
 		Net  string `json:"net"`
-		Type string `json:"type"`
 		Host string `json:"host"`
 		Path string `json:"path"`
 		Tls  string `json:"tls"`
 		Sni  string `json:"sni"`
 		Alpn string `json:"alpn"`
 		Fp   string `json:"fp"`
-	}{}
-	err = json.Unmarshal(b, &v)
-	if err != nil {
+	}
+	if err := json.Unmarshal(b, &v); err != nil {
 		return clash.Proxies{}, err
 	}
-	name := v.Ps
+	alterID, _ := strconv.Atoi(jsonNumberString(v.Aid))
 	p := clash.Proxies{
-		Type:   "vmess",
-		Name:   name,
-		Server: v.Add,
-		Uuid:   v.Id,
-		Cipher: v.Scy,
+		Type:              "vmess",
+		Name:              v.Ps,
+		Server:            v.Add,
+		Port:              jsonNumberString(v.Port),
+		Uuid:              v.Id,
+		Cipher:            v.Scy,
+		AlterId:           clash.MyInt(alterID),
+		Network:           v.Net,
+		Alpn:              splitComma(v.Alpn),
+		ClientFingerprint: v.Fp,
 	}
-
-	switch port := v.Port.(type) {
-	case string:
-		p.Port = port
-	case float64:
-		p.Port = strconv.FormatFloat(port, 'f', -1, 64)
-	}
-
-	switch aid := v.Aid.(type) {
-	case string:
-		i, err := strconv.Atoi(aid)
-		if err == nil {
-			p.AlterId = clash.MyInt(i)
-		}
-	case float64:
-		p.AlterId = clash.MyInt(int(aid))
-	}
-
 	if v.Tls == "tls" {
-		p.Tls = clash.MyBool(true)
+		p.Tls = true
 		p.Servername = v.Sni
 	}
-
-	p.Network = v.Net
-	switch p.Network {
+	switch v.Net {
 	case "ws":
 		p.WsOpts.Path = v.Path
-		p.WsOpts.Headers = map[string]string{
-			"Host": v.Host,
-		}
+		p.WsOpts.Headers = map[string]string{"Host": v.Host}
 	case "http":
 		p.HTTPOpts.Path = []string{v.Path}
-		p.HTTPOpts.Headers = map[string][]string{
-			"Host": {v.Host},
-		}
+		p.HTTPOpts.Headers = map[string][]string{"Host": {v.Host}}
 	case "h2":
 		p.H2Opts.Path = v.Path
 		p.H2Opts.Host = []string{v.Host}
 	case "grpc":
 		p.GrpcOpts.GrpcServiceName = v.Path
-
 	}
-	if v.Alpn != "" {
-		p.Alpn = strings.Split(v.Alpn, ",")
-	}
-	p.ClientFingerprint = v.Fp
 	return p, nil
+}
+
+// jsonNumberString 把 vmess 链接里既可能是数字也可能是字符串的字段统一成字符串。
+func jsonNumberString(v any) string {
+	switch n := v.(type) {
+	case string:
+		return n
+	case float64:
+		return strconv.FormatFloat(n, 'f', -1, 64)
+	}
+	return ""
 }
 
 func parseSs(u *url.URL) (clash.Proxies, error) {
-	p := clash.Proxies{
-		Type:   "ss",
-		Server: u.Hostname(),
-		Port:   u.Port(),
-		Name:   u.Fragment,
-	}
-	password, ok := u.User.Password()
-	decodedUserInfo, err := base64.RawURLEncoding.DecodeString(u.User.Username())
-	if err == nil && !ok {
-		parts := strings.SplitN(string(decodedUserInfo), ":", 2)
-		if len(parts) == 2 {
-			p.Cipher = parts[0]
-			p.Password = parts[1]
-		}
+	p := baseProxy(u, "ss")
+	// userinfo 有两种写法：base64(method:password) 或明文 method:password
+	if password, ok := u.User.Password(); ok {
+		p.Cipher = u.User.Username()
+		p.Password = password
 	} else {
-		if ok {
-			p.Password = password
-			p.Cipher = u.User.Username()
-		} else {
+		decoded, err := base64.RawURLEncoding.DecodeString(u.User.Username())
+		if err != nil {
 			return clash.Proxies{}, fmt.Errorf("invalid ss link")
 		}
-	}
-
-	q := u.Query()
-
-	if plugin, ok := q["plugin"]; ok {
-		if len(plugin) > 0 {
-			// u.Query() 已对查询参数做 percent 解码，无需再次解码
-			pluginStr := plugin[0]
-			parts := strings.Split(pluginStr, ";")
-			if len(parts) < 2 {
-				return clash.Proxies{}, fmt.Errorf("invalid plugin: %s", pluginStr)
-			}
-			opts := make(map[string]string)
-			for _, part := range parts[1:] {
-				kv := strings.SplitN(part, "=", 2)
-				if len(kv) == 2 {
-					opts[kv[0]] = kv[1]
-				} else if kv[0] == "tls" {
-					// v2ray-plugin 以裸标志 `tls` 表示启用 TLS
-					opts["tls"] = "true"
-				}
-			}
-
-			switch parts[0] {
-			case "obfs-local", "simple-obfs":
-				p.Plugin = "obfs"
-				pluginOpts := make(map[string]string)
-				pluginOpts["mode"] = opts["obfs"]
-				if host, ok := opts["obfs-host"]; ok {
-					pluginOpts["host"] = host
-				}
-				_ = p.PluginOpts.Encode(pluginOpts)
-			case "v2ray-plugin":
-				p.Plugin = "v2ray-plugin"
-				pluginOpts := make(map[string]any)
-				pluginOpts["mode"] = opts["mode"]
-				if _, ok := opts["tls"]; ok {
-					pluginOpts["tls"] = true
-				}
-				pluginOpts["host"] = opts["host"]
-				_ = p.PluginOpts.Encode(pluginOpts)
-
-			}
+		if cipher, pass, ok := strings.Cut(string(decoded), ":"); ok {
+			p.Cipher, p.Password = cipher, pass
 		}
 	}
-
-	if tfo, ok := q["tfo"]; ok && len(tfo) > 0 && (tfo[0] == "1" || tfo[0] == "true") {
-		p.Tfo = true
+	q := u.Query()
+	if plugin := q.Get("plugin"); plugin != "" {
+		if err := parseSsPlugin(&p, plugin); err != nil {
+			return clash.Proxies{}, err
+		}
 	}
+	p.Tfo = bool(queryBool(q, "tfo"))
 	return p, nil
 }
 
-func parseAnytls(u *url.URL) (clash.Proxies, error) {
-	p := clash.Proxies{
-		Name:   u.Fragment,
-		Type:   "anytls",
-		Server: u.Hostname(),
-		Port:   u.Port(),
+// parseSsPlugin 解析 SIP002 的 plugin 参数（"插件名;k=v;flag"）为 Clash 的 plugin / plugin-opts。
+func parseSsPlugin(p *clash.Proxies, plugin string) error {
+	name, rest, ok := strings.Cut(plugin, ";")
+	if !ok {
+		return fmt.Errorf("invalid plugin: %s", plugin)
 	}
+	opts := map[string]string{}
+	for _, part := range strings.Split(rest, ";") {
+		k, v, hasValue := strings.Cut(part, "=")
+		switch {
+		case hasValue:
+			opts[k] = v
+		case k == "tls": // v2ray-plugin 用裸标志 tls 表示启用 TLS
+			opts["tls"] = "true"
+		}
+	}
+	switch name {
+	case "obfs-local", "simple-obfs":
+		p.Plugin = "obfs"
+		pluginOpts := map[string]string{"mode": opts["obfs"]}
+		if host, ok := opts["obfs-host"]; ok {
+			pluginOpts["host"] = host
+		}
+		return p.PluginOpts.Encode(pluginOpts)
+	case "v2ray-plugin":
+		p.Plugin = "v2ray-plugin"
+		pluginOpts := map[string]any{"mode": opts["mode"], "host": opts["host"]}
+		if _, ok := opts["tls"]; ok {
+			pluginOpts["tls"] = true
+		}
+		return p.PluginOpts.Encode(pluginOpts)
+	}
+	return nil
+}
+
+func parseAnytls(u *url.URL) (clash.Proxies, error) {
+	p := baseProxy(u, "anytls")
 	p.Password = u.User.Username()
 	q := u.Query()
-
 	p.Servername = q.Get("sni")
-	if v := q.Get("insecure"); v == "1" {
-		p.SkipCertVerify = true
-	}
+	p.SkipCertVerify = queryBool(q, "insecure")
 	return p, nil
 }

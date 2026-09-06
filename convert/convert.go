@@ -3,164 +3,18 @@ package convert
 import (
 	"errors"
 	"fmt"
-	"runtime"
 	"strconv"
-	"sync"
 
 	"github.com/xmdhs/clash2singbox/model"
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"github.com/xmdhs/clash2singbox/model/singbox"
 )
 
-var convertMap = map[string]func(*clash.Proxies, *singbox.SingBoxOut, model.SingBoxVer) ([]singbox.SingBoxOut, error){
-	"vmess":       oldConver(vmess),
-	"vless":       oldConver(vless),
-	"shadowsocks": ss,
-	// "shadowsocksr": ss,
-	"trojan":    oldConver(trojan),
-	"http":      oldConver(httpOpts),
-	"socks":     oldConver(socks5),
-	"hysteria":  oldConver(hysteria),
-	"hysteria2": hysteia2,
-	"tuic":      tuic,
-	"anytls":    anytls,
-	"snell":     snell,
-}
-
-func oldConver(f func(*clash.Proxies, *singbox.SingBoxOut) error) func(*clash.Proxies, *singbox.SingBoxOut, model.SingBoxVer) ([]singbox.SingBoxOut, error) {
-	return func(c *clash.Proxies, p *singbox.SingBoxOut, _ model.SingBoxVer) ([]singbox.SingBoxOut, error) {
-		err := f(c, p)
-		return []singbox.SingBoxOut{*p}, err
-	}
-}
-
-// convertOne 转换单个节点：纯函数（只读入参拷贝），可并发调用。
-// 返回 outs（普通 outbound）、ep（wireguard/openvpn endpoint），二者互斥；
-// err 非空时调用方丢弃 outs/ep，与原串行语义一致。
-func convertOne(v clash.Proxies, ver model.SingBoxVer) ([]singbox.SingBoxOut, *singbox.SingBoxEndpoint, error) {
-	t := typeMap[v.Type]
-	if t == "" {
-		return nil, nil, fmt.Errorf("comm: %w %v", ErrNotSupportType, v.Type)
-	}
-	if t == "wireguard" {
-		ep, err := wireguardEndpoint(&v)
-		if err != nil {
-			return nil, nil, err
-		}
-		return nil, ep, nil
-	}
-	if t == "openvpn-client" {
-		ep, err := openvpnEndpoint(&v)
-		if err != nil {
-			return nil, nil, err
-		}
-		return nil, ep, nil
-	}
-	s, _, err := comm(&v)
-	if err != nil {
-		return nil, nil, err
-	}
-	fn := convertMap[t]
-	if fn == nil {
-		return nil, nil, fmt.Errorf("comm: %w %v", ErrNotSupportType, v.Type)
-	}
-	nsl, err := fn(&v, s, ver)
-	if err != nil {
-		return nil, nil, err
-	}
-	return nsl, nil, nil
-}
-
-// serialThreshold 以下节点数走串行，避免 goroutine 开销盖过实际工作。
-const serialThreshold = 64
-
-func Clash2sing(c clash.Clash, ver model.SingBoxVer) ([]singbox.SingBoxOut, []*singbox.SingBoxEndpoint, error) {
-	n := len(c.Proxies)
-	sl := make([]singbox.SingBoxOut, 0, n+1)
-	var eps []*singbox.SingBoxEndpoint
-	var jerr error
-	if n < serialThreshold {
-		for _, v := range c.Proxies {
-			v := v
-			outs, ep, err := convertOne(v, ver)
-			if err != nil {
-				jerr = errors.Join(jerr, err)
-				continue
-			}
-			if ep != nil {
-				eps = append(eps, ep)
-				continue
-			}
-			sl = append(sl, outs...)
-		}
-	} else {
-		// 按核分片并行转换，按下标写回以保序（输出顺序与输入一致，
-		// 错误 Join 顺序也与串行一致）。
-		workers := runtime.NumCPU()
-		if workers < 2 {
-			workers = 2
-		}
-		if workers > n {
-			workers = n
-		}
-		outsList := make([][]singbox.SingBoxOut, n)
-		epsList := make([]*singbox.SingBoxEndpoint, n)
-		errs := make([]error, n)
-		var wg sync.WaitGroup
-		chunk := (n + workers - 1) / workers
-		for w := 0; w < workers; w++ {
-			start := w * chunk
-			end := start + chunk
-			if end > n {
-				end = n
-			}
-			if start >= end {
-				break
-			}
-			wg.Add(1)
-			go func(start, end int) {
-				defer wg.Done()
-				for i := start; i < end; i++ {
-					outs, ep, err := convertOne(c.Proxies[i], ver)
-					outsList[i] = outs
-					epsList[i] = ep
-					errs[i] = err
-				}
-			}(start, end)
-		}
-		wg.Wait()
-		for i := 0; i < n; i++ {
-			if errs[i] != nil {
-				jerr = errors.Join(jerr, errs[i])
-				continue
-			}
-			if epsList[i] != nil {
-				eps = append(eps, epsList[i])
-				continue
-			}
-			sl = append(sl, outsList[i]...)
-		}
-	}
-	slm := make(map[string]singbox.SingBoxOut, len(c.Proxies)+1)
-	for _, v := range sl {
-		slm[v.Tag] = v
-	}
-	for _, v := range c.ProxyGroup {
-		if v.Type != "relay" {
-			continue
-		}
-		l := relay(slm, v.Proxies, v.Name)
-		sl = append(sl, l...)
-	}
-
-	return sl, eps, jerr
-}
-
 var ErrNotSupportType = errors.New("不支持的类型")
 
+// typeMap 把 Clash 节点的 type 映射为 sing-box 的 outbound / endpoint 类型。
 var typeMap = map[string]string{
-	"ss": "shadowsocks",
-	// "ssr":       "shadowsocksr",
+	"ss":        "shadowsocks",
 	"vmess":     "vmess",
 	"vless":     "vless",
 	"trojan":    "trojan",
@@ -175,21 +29,104 @@ var typeMap = map[string]string{
 	"snell":     "snell",
 }
 
-func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
-	s := &singbox.SingBoxOut{}
-	s.Type = typeMap[p.Type]
-	if s.Type == "" {
-		return nil, "", fmt.Errorf("comm: %w %v", ErrNotSupportType, p.Type)
+// converter 把 Clash 节点 p 的协议字段填入已由 comm 初始化好通用字段的 s。
+// 少数协议会拆出多个 outbound（如 shadow-tls 插件），因此返回切片。
+type converter func(p *clash.Proxies, s *singbox.SingBoxOut, ver model.SingBoxVer) ([]singbox.SingBoxOut, error)
+
+// convertMap 以 sing-box 类型为键；wireguard / openvpn-client 是 endpoint，在 convertOne 中单独处理。
+var convertMap = map[string]converter{
+	"vmess":       single(vmess),
+	"vless":       single(vless),
+	"shadowsocks": ss,
+	"trojan":      single(trojan),
+	"http":        single(httpOpts),
+	"socks":       single(socks5),
+	"hysteria":    single(hysteria),
+	"hysteria2":   hysteria2,
+	"tuic":        tuic,
+	"anytls":      anytls,
+	"snell":       snell,
+}
+
+// single 适配只产出一个 outbound 且不区分 sing-box 版本的转换函数。
+func single(f func(*clash.Proxies, *singbox.SingBoxOut) error) converter {
+	return func(p *clash.Proxies, s *singbox.SingBoxOut, _ model.SingBoxVer) ([]singbox.SingBoxOut, error) {
+		if err := f(p, s); err != nil {
+			return nil, err
+		}
+		return []singbox.SingBoxOut{*s}, nil
 	}
-	s.Tag = p.Name
-	s.Server = p.Server
+}
+
+// Clash2sing 把 Clash 节点转换为 sing-box outbounds，wireguard / openvpn 节点转换为 endpoints。
+// 单个节点失败不影响其他节点，所有错误汇总在返回的 error 中；relay 类型的 proxy-group 会展开成链式 outbound。
+func Clash2sing(c clash.Clash, ver model.SingBoxVer) ([]singbox.SingBoxOut, []*singbox.SingBoxEndpoint, error) {
+	outs := make([]singbox.SingBoxOut, 0, len(c.Proxies))
+	var eps []*singbox.SingBoxEndpoint
+	var errs []error
+	for i := range c.Proxies {
+		nodeOuts, ep, err := convertOne(&c.Proxies[i], ver)
+		switch {
+		case err != nil:
+			errs = append(errs, err)
+		case ep != nil:
+			eps = append(eps, ep)
+		default:
+			outs = append(outs, nodeOuts...)
+		}
+	}
+
+	byTag := make(map[string]singbox.SingBoxOut, len(outs))
+	for _, v := range outs {
+		byTag[v.Tag] = v
+	}
+	for _, g := range c.ProxyGroup {
+		if g.Type == "relay" {
+			outs = append(outs, relay(byTag, g.Proxies, g.Name)...)
+		}
+	}
+	return outs, eps, errors.Join(errs...)
+}
+
+// convertOne 转换单个节点：wireguard / openvpn 返回 endpoint，其他协议返回一个或多个 outbound。
+func convertOne(p *clash.Proxies, ver model.SingBoxVer) ([]singbox.SingBoxOut, *singbox.SingBoxEndpoint, error) {
+	switch typeMap[p.Type] {
+	case "":
+		return nil, nil, fmt.Errorf("comm: %w %v", ErrNotSupportType, p.Type)
+	case "wireguard":
+		ep, err := wireguardEndpoint(p)
+		return nil, ep, err
+	case "openvpn-client":
+		ep, err := openvpnEndpoint(p)
+		return nil, ep, err
+	}
+	s, err := comm(p)
+	if err != nil {
+		return nil, nil, err
+	}
+	outs, err := convertMap[s.Type](p, s, ver)
+	return outs, nil, err
+}
+
+// comm 用 Clash 节点的通用字段（名称、服务器、端口、密码、smux、tfo、mptcp）初始化一个 outbound。
+func comm(p *clash.Proxies) (*singbox.SingBoxOut, error) {
+	typ := typeMap[p.Type]
+	if typ == "" {
+		return nil, fmt.Errorf("comm: %w %v", ErrNotSupportType, p.Type)
+	}
 	port, err := strconv.Atoi(p.Port)
 	if err != nil {
-		return nil, "", fmt.Errorf("comm: %w", err)
+		return nil, fmt.Errorf("comm: %w", err)
 	}
-	s.ServerPort = port
-	s.Password = p.Password
-
+	s := &singbox.SingBoxOut{
+		Type:         typ,
+		Tag:          p.Name,
+		Server:       p.Server,
+		ServerPort:   port,
+		Password:     p.Password,
+		TcpFastOpen:  p.Tfo,
+		TcpMultiPath: p.Mptcp,
+	}
 	if p.Smux.Enabled {
 		s.Multiplex = &singbox.SingMultiplex{
 			Enabled:    true,
@@ -197,13 +134,11 @@ func comm(p *clash.Proxies) (*singbox.SingBoxOut, string, error) {
 			Padding:    bool(p.Smux.Padding),
 			Protocol:   p.Smux.Protocol,
 		}
+		// 未限制 max-streams 时，给连接数与最小流数一个下限，避免 sing-box 只开一条连接
 		if p.Smux.MaxStreams == 0 {
 			s.Multiplex.MinStreams = max(int(p.Smux.MinStreams), 4)
 			s.Multiplex.MaxConnections = max(int(p.Smux.MaxConnections), 4)
 		}
 	}
-	s.TcpFastOpen = p.Tfo
-	s.TcpMultiPath = p.Mptcp
-
-	return s, s.Type, nil
+	return s, nil
 }

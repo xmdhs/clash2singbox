@@ -34,7 +34,7 @@ func TestHysteriaSinglePort(t *testing.T) {
 		Up:     "10",
 		Down:   "20",
 	}
-	s, _, err := comm(p)
+	s, err := comm(p)
 	assert.NoError(t, err)
 	err = hysteria(p, s)
 	assert.NoError(t, err)
@@ -53,7 +53,7 @@ func TestHysteriaServerPortsAndHopInterval(t *testing.T) {
 		Down:        "20",
 		HopInterval: 15,
 	}
-	s, _, err := comm(p)
+	s, err := comm(p)
 	assert.NoError(t, err)
 	err = hysteria(p, s)
 	assert.NoError(t, err)
@@ -73,10 +73,10 @@ func TestHysteria2ServerPortsAndHopInterval(t *testing.T) {
 		Down:        "20",
 		HopInterval: 30,
 	}
-	s, _, err := comm(p)
+	s, err := comm(p)
 	assert.NoError(t, err)
 	// server_ports / hop_interval 自 sing-box 1.11.0 起支持
-	out, err := hysteia2(p, s, model.SINGLATEST)
+	out, err := hysteria2(p, s, model.SINGLATEST)
 	assert.NoError(t, err)
 	assert.Len(t, out, 1)
 	assert.Equal(t, 0, out[0].ServerPort)
@@ -94,10 +94,10 @@ func TestHysteria2SinglePortBelow111(t *testing.T) {
 		Up:     "10",
 		Down:   "20",
 	}
-	s, _, err := comm(p)
+	s, err := comm(p)
 	assert.NoError(t, err)
 	// sing-box < 1.11.0 不支持 server_ports，退化为随机单端口
-	out, err := hysteia2(p, s, model.SING110)
+	out, err := hysteria2(p, s, model.SING110)
 	assert.NoError(t, err)
 	assert.Len(t, out, 1)
 	assert.Equal(t, []string(nil), out[0].ServerPorts)
@@ -154,7 +154,7 @@ func TestAnytlsDisablesTCPFastOpen(t *testing.T) {
 		Password: "pass",
 		Tfo:      true,
 	}
-	s, _, err := comm(p)
+	s, err := comm(p)
 	assert.NoError(t, err)
 	out, err := anytls(p, s, model.SINGLATEST)
 	assert.NoError(t, err)
@@ -171,7 +171,7 @@ func TestVmessHTTPTransportDetection(t *testing.T) {
 		Network: "http",
 	}
 	assert.NoError(t, yaml.Unmarshal([]byte("http-opts:\n  path: [/test]\n"), p))
-	s, _, err := comm(p)
+	s, err := comm(p)
 	assert.NoError(t, err)
 	err = vmess(p, s)
 	assert.NoError(t, err)
@@ -191,7 +191,7 @@ func TestVmessFields(t *testing.T) {
 		AuthenticatedLength: true,
 		PacketEncoding:      "packetaddr",
 	}
-	s, _, err := comm(p)
+	s, err := comm(p)
 	assert.NoError(t, err)
 	err = vmess(p, s)
 	assert.NoError(t, err)
@@ -209,7 +209,7 @@ func TestVlessPacketEncodingCompatibility(t *testing.T) {
 		Uuid:            "uuid",
 		PacketEncoding1: "xudp",
 	}
-	s, _, err := comm(p)
+	s, err := comm(p)
 	assert.NoError(t, err)
 	err = vless(p, s)
 	assert.NoError(t, err)
