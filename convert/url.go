@@ -323,7 +323,7 @@ func parseSsPlugin(p *clash.Proxies, plugin string) error {
 		return fmt.Errorf("invalid plugin: %s", plugin)
 	}
 	opts := map[string]string{}
-	for _, part := range strings.Split(rest, ";") {
+	for part := range strings.SplitSeq(rest, ";") {
 		k, v, hasValue := strings.Cut(part, "=")
 		switch {
 		case hasValue:

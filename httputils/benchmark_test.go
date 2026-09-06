@@ -10,7 +10,7 @@ import (
 func benchmarkSingJSON(nodeCount int) []byte {
 	var b bytes.Buffer
 	b.WriteString(`{"outbounds":[`)
-	for i := 0; i < nodeCount; i++ {
+	for i := range nodeCount {
 		if i > 0 {
 			b.WriteByte(',')
 		}

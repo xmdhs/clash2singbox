@@ -844,7 +844,7 @@ proxies:
 	// 顺序与输入一致，realm 节点在前
 	var realmOut, directOut *struct {
 		Tag   string
-		Realm interface{}
+		Realm any
 	}
 	_ = realmOut
 	_ = directOut
