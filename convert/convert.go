@@ -76,12 +76,15 @@ func Clash2sing(c clash.Clash, ver model.SingBoxVer) ([]singbox.SingBoxOut, []*s
 		}
 	}
 
-	byTag := make(map[string]singbox.SingBoxOut, len(outs))
-	for _, v := range outs {
-		byTag[v.Tag] = v
-	}
+	var byTag map[string]singbox.SingBoxOut
 	for _, g := range c.ProxyGroup {
 		if g.Type == "relay" {
+			if byTag == nil {
+				byTag = make(map[string]singbox.SingBoxOut, len(outs))
+				for _, v := range outs {
+					byTag[v.Tag] = v
+				}
+			}
 			outs = append(outs, relay(byTag, g.Proxies, g.Name)...)
 		}
 	}
